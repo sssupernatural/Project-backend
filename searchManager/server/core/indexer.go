@@ -113,12 +113,12 @@ func (indexer *Indexer) AddUserToCache(user *types.UserIndex, forceUpdate bool) 
 	}
 
 	indexer.addCacheLock.Lock()
-	//SWT : 将文档添加到"等待加入索引的文档缓存区"
+	//SWT : 将用户添加到"等待加入索引的用户缓存区"
 	if user != nil {
 		indexer.addCacheLock.addCache[indexer.addCacheLock.addCachePointer] = user
 		indexer.addCacheLock.addCachePointer++
 	}
-	//缓存满或者强制更新时，将"等待加入索引的文档缓存区"中的文档添加到索引表中
+	//缓存满或者强制更新时，将"等待加入索引的用户缓存区"中的用户添加到索引表中
 	if indexer.addCacheLock.addCachePointer >= indexer.initOptions.UserCacheSize || forceUpdate {
 		indexer.tableLock.Lock()
 		position := 0
@@ -144,14 +144,14 @@ func (indexer *Indexer) AddUserToCache(user *types.UserIndex, forceUpdate bool) 
 				}
 				position++
 			} else if !ok {
-				//将不存在于索引中的待添加文档在索引的文档状态置为"待添加"
+				//将不存在于索引中的待添加用户在索引的用户状态置为"待添加"
 				indexer.tableLock.usersState[userIndex.ID] = 2
 			}
 		}
 
 		indexer.tableLock.Unlock()
 		if indexer.RemoveUserToCache(0, forceUpdate) {
-			// 只有当存在于索引表中的文档已被删除，其才可以重新加入到索引表中
+			// 只有当存在于索引表中的用户已被删除，其才可以重新加入到索引表中
 			position = 0
 		}
 
@@ -179,12 +179,12 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 	// UserID 递增顺序遍历插入用户保证索引移动次数最少
 	for i, user := range *users {
 		if i < len(*users)-1 && (*users)[i].ID == (*users)[i+1].ID {
-			// 如果有重复文档加入，因为稳定排序，只加入最后一个
+			// 如果有重复用户加入，因为稳定排序，只加入最后一个
 			continue
 		}
 		if userState, ok := indexer.tableLock.usersState[user.ID]; ok && userState == 1 {
 			// 如果此时 userState 仍为 1，说明该用户需被删除
-			// userState 合法状态为 nil & 2，保证一定不会插入已经在索引表中的文档
+			// userState 合法状态为 nil & 2，保证一定不会插入已经在索引表中的用户
 			continue
 		}
 
@@ -236,8 +236,8 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 	}
 }
 
-// 向 REMOVECACHE 中加入一个待删除文档
-// 返回值表示文档是否在索引表中被删除
+// 向 REMOVECACHE 中加入一个待删除用户
+// 返回值表示用户是否在索引表中被删除
 func (indexer *Indexer) RemoveUserToCache(userID uint32, forceUpdate bool) bool {
 	if indexer.initialized == false {
 		logger.Fatal("索引器尚未初始化")
@@ -252,10 +252,10 @@ func (indexer *Indexer) RemoveUserToCache(userID uint32, forceUpdate bool) bool 
 			indexer.tableLock.usersState[userID] = 1
 			indexer.numUsers--
 		} else if ok && userState == 2 {
-			// 删除一个等待加入的文档
+			// 删除一个等待加入的用户
 			indexer.tableLock.usersState[userID] = 1
 		} else if !ok {
-			// 若文档不存在，则无法判断其是否在 addCache 中，需避免这样的操作
+			// 若用户不存在，则无法判断其是否在 addCache 中，需避免这样的操作
 		}
 		indexer.tableLock.Unlock()
 	}
@@ -274,7 +274,7 @@ func (indexer *Indexer) RemoveUserToCache(userID uint32, forceUpdate bool) bool 
 	return false
 }
 
-// 向反向索引表中删除 REMOVECACHE 中所有文档
+// 向反向索引表中删除 REMOVECACHE 中所有用户
 func (indexer *Indexer) RemoveUsers(users *types.UsersID) {
 	if indexer.initialized == false {
 		logger.Fatal("索引器尚未初始化")
@@ -357,7 +357,7 @@ func (indexer *Indexer)getLocationOwnersIDs(locationOwners []comm.Location) []ui
 }
 
 // 查找符合请求要求的用户
-// 当userIds不为nil时仅从userIds指定的文档中查找 : 未实现
+// 当userIds不为nil时仅从userIds指定的用户中查找 : 未实现
 func (indexer *Indexer) Lookup(
 	abisHeap *comm.AbisHeap, locationOwners []comm.Location, userIDs map[uint32]bool, countDocsOnly bool) (users []types.IndexedUser, numUsers int) {
 	if indexer.initialized == false {
@@ -392,7 +392,7 @@ func (indexer *Indexer) Lookup(
 	return resultUsers, len(resultUsers)
 }
 
-// 二分法查找indices中某文档的索引项
+// 二分法查找indices中某用户的索引项
 // 第一个返回参数为找到的位置或需要插入的位置
 // 第二个返回参数标明是否找到
 func (indexer *Indexer) searchIndex(
@@ -427,7 +427,7 @@ func (indexer *Indexer) searchIndex(
 	return end, false
 }
 
-// 二分法查找indices中某文档的索引项
+// 二分法查找indices中某用户的索引项
 // 第一个返回参数为找到的位置或需要插入的位置
 // 第二个返回参数标明是否找到
 func (indexer *Indexer) searchLocIndex(
