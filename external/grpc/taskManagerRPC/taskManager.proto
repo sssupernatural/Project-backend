@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+import "comm/comm.proto";
+
+message CreateTaskReq {
+    TaskCreateInfo createInfo = 1;
+}
+
+message QueryUserTasksReq {
+    uint32 userID = 1;
+}
+
+message AcceptTaskReq {
+    uint64 taskID      = 1;
+    uint32 responserID = 2;
+    int32  Decision    = 3;
+}
+
+message ChooseTaskResponserReq {
+    uint64 taskID           = 1;
+    uint32 choseResponserID = 2;
+}
+
+message FulfilTaskReq {
+    uint64 taskID      = 1;
+    uint32 responserID = 2;
+}
+
+message EvaluateAndFinishTaskReq {
+    uint64 taskID      = 1;
+    uint32 requesterID = 2;
+}
+
+message TaskManagerRespComm {
+    int32  ErrorCode = 1;
+    string ErrorMsg  = 2;
+}
+
+message CreateTaskResp {
+    TaskManagerRespComm comm     = 1;
+}
+
+message QueryUserTasksResp {
+    TaskManagerRespComm comm         = 1;
+    repeated TaskInfoWithUsers tasks = 2;
+}
+
+message AcceptTaskResp {
+    TaskManagerRespComm comm = 1;
+}
+
+message ChooseTaskResponserResp {
+    TaskManagerRespComm comm     = 1;
+}
+
+message FulfilTaskResp {
+    TaskManagerRespComm comm     = 1;
+}
+
+message EvaluateAndFinishTaskResp {
+    TaskManagerRespComm comm     = 1;
+}
+
+service TaskManager {
+    rpc CreateTask (CreateTaskReq) returns (CreateTaskResp) {}
+    rpc QueryUserTasks (QueryUserTasksReq) returns (QueryUserTasksResp) {}
+    rpc AcceptTask (AcceptTaskReq) returns (AcceptTaskResp) {}
+    rpc ChooseTaskResponser (ChooseTaskResponserReq) returns (ChooseTaskResponserResp) {}
+    rpc FulfilTask (FulfilTaskReq) returns (FulfilTaskResp) {}
+    rpc EvaluateAndFinishTask (EvaluateAndFinishTaskReq) returns (EvaluateAndFinishTaskResp) {}
+}

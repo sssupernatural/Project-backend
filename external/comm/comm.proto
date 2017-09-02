@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+message UserCheckInfo {
+    string PhoneNumber = 1;
+    string Password    = 2;
+    string Name        = 3;
+}
+
+message UserAction {
+    string Action           = 1;
+    UserCheckInfo CheckInfo = 2;
+}
+
+message Location {
+    double longitude = 1;
+    double latitude  = 2;
+}
+
+message AbiNode {
+    string ABI         = 1;
+    int32  ParentIndex = 2;
+    int32  Experience  = 3;
+}
+
+message AbisHeap {
+    repeated AbiNode ABIs = 1;
+}
+
+message UserInfo {
+    uint32   ID                 = 1;
+    string   PhoneNumber        = 2;
+    string   Name               = 3;
+    int32    Status             = 4;
+    int32    Sex                = 5;
+    int32    Age                = 6;
+    Location CurLocation        = 7;
+    repeated Location Locations = 8;
+    AbisHeap Abilities          = 9;
+}
+
+message TaskAction {
+    string Action   = 1;
+    uint64 TaskID   = 2;
+    uint32 UserID   = 3;
+    int32  Decision = 4;
+}
+
+message TaskCreateInfo {
+    uint32 RequesterID            = 1;
+    string Brief                = 2;
+    int32  Sex                  = 3;
+    int32  AgeMin               = 4;
+    int32  AgeMax               = 5;
+    repeated Location Locations = 6;
+    AbisHeap Abilities          = 7;
+}
+
+message TaskInfo {
+    uint64 ID                  = 1;
+    int32  Status              = 2;
+    TaskCreateInfo Desc        = 3;
+    uint32 Requester           = 4;
+    uint32 ChosenResponser     = 5;
+    repeated uint32 Responsers = 6;
+}
+
+message TaskInfoWithUsers {
+    uint64 ID                    = 1;
+    int32  Status                = 2;
+    TaskCreateInfo Desc          = 3;
+    UserInfo Requester           = 4;
+    UserInfo ChosenResponser     = 5;
+    repeated UserInfo Responsers = 6;
+}

@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+import "comm/comm.proto";
+
+message UserManagerRegisterReq {
+    UserCheckInfo userCheckInfo = 1;
+}
+
+message UserManagerLoginReq {
+    UserCheckInfo userCheckInfo = 1;
+}
+
+message UserManagerLogoutReq {
+    UserCheckInfo userCheckInfo = 1;
+}
+
+message UserManagerAddUserInfoReq {
+    UserInfo newUserInfo = 1;
+}
+
+message UserManagerRespComm {
+    int32  ErrorCode = 1;
+    string ErrorMsg  = 2;
+}
+
+message UserManagerRegisterResp {
+    UserManagerRespComm comm     = 1;
+    UserInfo            userInfo = 2;
+}
+
+message UserManagerLoginResp {
+    UserManagerRespComm comm     = 1;
+    UserInfo            userInfo = 2;
+}
+
+message UserManagerLogoutResp {
+    UserManagerRespComm comm = 1;
+}
+
+message UserManagerAddUserInfoResp {
+    UserManagerRespComm comm     = 1;
+    UserInfo            userInfo = 2;
+}
+
+service UserManager {
+    rpc RegisterUser (UserManagerRegisterReq) returns (UserManagerRegisterResp) {}
+    rpc LoginUser (UserManagerLoginReq) returns (UserManagerLoginResp) {}
+    rpc LogoutUser (UserManagerLogoutReq) returns (UserManagerLogoutResp) {}
+    rpc AddUserInfo (UserManagerAddUserInfoReq) returns (UserManagerAddUserInfoResp) {}
+}

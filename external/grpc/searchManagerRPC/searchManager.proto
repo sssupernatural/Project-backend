@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+import "comm/comm.proto";
+
+message SearchResponsersReq {
+    TaskInfo task = 1;
+}
+
+message InsertUserRecordsReq {
+    int32 userRecordNum     = 1;
+    repeated UserInfo users = 2;
+}
+
+message SearchManagerRespComm {
+    int32  ErrorCode = 1;
+    string ErrorMsg  = 2;
+}
+
+message SearchResponsersResp {
+    SearchManagerRespComm comm = 1;
+    TaskInfo              task = 2;
+}
+
+message InsertUserRecordsResp {
+    SearchManagerRespComm comm = 1;
+}
+
+service SearchManager {
+    rpc SearchResponsers (SearchResponsersReq) returns (SearchResponsersResp) {}
+    rpc InsertUserRecords (InsertUserRecordsReq) returns (InsertUserRecordsResp) {}
+}
