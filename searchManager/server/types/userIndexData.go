@@ -14,6 +14,7 @@ type SMScoringField struct {
 	AgeMin      int32
 	AgeMax      int32
 	Status      int32
+	Abis        *comm.AbisHeap
 	CurLocation *comm.Location
 	Locations   []*comm.Location
 }
@@ -23,6 +24,7 @@ func (d *UserIndexData)GetScoringField() *SMScoringField {
 		Sex:         d.Info.Sex,
 		Age:         d.Info.Age,
 		Status:      d.Info.Status,
+		Abis:        d.Info.Abilities,
 		CurLocation: d.Info.CurLocation,
 		Locations:   d.Info.Locations,
 	}

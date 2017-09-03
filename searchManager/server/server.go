@@ -72,6 +72,7 @@ func (s *SMServer)SearchResponsers(ctx context.Context, srReq *smrpc.SearchRespo
 		Sex: ti.Desc.Sex,
 		AgeMax: ti.Desc.AgeMax,
 		AgeMin: ti.Desc.AgeMin,
+		Abis:   ti.Desc.Abilities,
 		Locations: ti.Desc.Locations,
 	}
 

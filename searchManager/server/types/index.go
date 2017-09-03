@@ -33,6 +33,16 @@ func GenerateOwnerLocation(srcLoc *comm.Location) comm.Location {
 	return comm.Location{Longitude: longitude, Latitude:latitude}
 }
 
+func GenerateLocOwner(locs []*comm.Location) []comm.Location {
+	out := make([]comm.Location, 0)
+
+	for _, l := range locs {
+		out = append(out, GenerateOwnerLocation(l))
+	}
+
+	return out
+}
+
 func (users UsersIndex) Len() int {
 	return len(users)
 }

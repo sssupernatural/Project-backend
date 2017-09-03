@@ -9,7 +9,6 @@ import (
 	"sort"
 	"searchManager/server/types"
 	"searchManager/server/core"
-	"external/comm"
 )
 
 const (
@@ -205,16 +204,6 @@ func (engine *Engine) RemoveUser(userID uint32, forceUpdate bool) {
 	}
 }
 
-func generateLocOwner(locs []*comm.Location) []comm.Location {
-	out := make([]comm.Location, 0)
-
-	for _, l := range locs {
-		out = append(out, types.GenerateOwnerLocation(l))
-	}
-
-	return out
-}
-
 func minInt(a, b int) int {
 	if a < b {
 		return a
@@ -242,7 +231,7 @@ func (engine *Engine) Search(request types.SearchRequest) (output types.SearchRe
 	rankerReturnChannel := make(
 	chan rankerReturnRequest, engine.initOptions.NumShards)
 
-	locOwners := generateLocOwner(request.Locations)
+	locOwners := types.GenerateLocOwner(request.Locations)
 
 	// 生成查找请求
 	lookupRequest := indexerLookupRequest{
