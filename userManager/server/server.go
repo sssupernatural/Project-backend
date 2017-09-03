@@ -46,7 +46,7 @@ func (s *UMServer)Init() error {
 	num = 0
 	insertUsers := make([]*comm.UserInfo, 0)
 	for _, u := range allUsers {
-		if len(u.Abilities) == 0 {
+		if u.Abilities == nil {
 			continue
 		}
 		insertUsers = append(insertUsers, &u)

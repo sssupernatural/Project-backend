@@ -54,6 +54,9 @@ func main() {
 
 	go curUser.QueryTaskAuto()
 
+	command.ClientIDToAbiMap = command.GenerateSysIDToAbiMap()
+	command.ClientAbiToIDMap = command.GenerateSysAbiToIDMap()
+
 	for {
 		fmt.Print("Command : ")
 		fmt.Scanln(&comd)

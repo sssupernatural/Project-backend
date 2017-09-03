@@ -33,6 +33,9 @@ type User struct {
 	TIs         []*comm.TaskInfoWithUsers
 }
 
+var ClientIDToAbiMap map[int]string
+var ClientAbiToIDMap map[string]int
+
 func (u *User)Clear()  {
 	u.ID = InvalidUserID
 	u.Name = ""
@@ -271,8 +274,8 @@ func printUserInfo(u *comm.UserInfo) {
 
 func (u *User)printUserAbilities()  {
 	fmt.Println("当前用户的能力列表：")
-	for i, a := range u.info.Abilities.ABIs {
-		fmt.Printf("%d-[%s(%d级)] | ", i, a.ABI, getAbiLevel(a.Experience))
+	for _, a := range u.info.Abilities.ABIs {
+		fmt.Printf("%d-[%s(%d级)] | ", ClientAbiToIDMap[a.ABI], a.ABI, getAbiLevel(a.Experience))
 	}
 	fmt.Println()
 }
@@ -283,20 +286,6 @@ func (u *User)printUserLocations()  {
 		fmt.Printf("%d-[%v] | ", i, l)
 	}
 	fmt.Println()
-}
-
-func printSysAbisSports() {
-	fmt.Println("-------------------------------------------------------------------")
-	fmt.Println()
-	fmt.Println("                     [00000:运动]")
-	fmt.Println("                           ┃")
-	fmt.Println("            ┏━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━┓")
-	fmt.Println("      [01000:球类运动]                     [02000:器械类运动]")
-	fmt.Println("            ┃                                  ┃   ")
-	fmt.Println("      ┏━━━━━┻━━━━━━┓            ┏━━━━━━━━━━━━━━╋━━━━━━━━━━━━┓")
-	fmt.Println("[01100:足球]  [01200:篮球]  [02100:自行车]  [02200:健身]  [02300:滑板] ")
-	fmt.Println()
-	fmt.Println("--------------------------------------------------------------------")
 }
 
 func printSysAbisEntertainment() {
@@ -315,6 +304,13 @@ func printSysAbisEntertainment() {
 	fmt.Println("---------------------------------------------------------------------------------------------------------")
 }
 
+var sysAbisEntertainment = []sysAbi{{10000, "娱乐"}, {11000, "唱歌"}, {12000, "桌游"}, {13000, "密室逃脱"},
+	                                {14000, "真人CS"}, {15000, "电脑游戏"}, {16000, "掌上游戏"}, {12100, "狼人杀"},
+	                                {12200, "三国杀"},{12300, "麻将"},{12400, "扑克"},{15100, "网络游戏"},
+	                                {15200, "单机游戏"},{15110, "绝地求生大逃杀"},{15120, "DOTA"},{15130, "CSGO"},
+	                                {15140, "H1Z1"},
+}
+
 func printSysAbisLiving() {
 	fmt.Println("---------------------------------------------------------------------------------------")
 	fmt.Println()
@@ -329,6 +325,11 @@ func printSysAbisLiving() {
 	fmt.Println("---------------------------------------------------------------------------------------")
 }
 
+var sysAbisLiving = []sysAbi{{20000, "生活"}, {21000, "美食"}, {22000, "交通"}, {23000, "住宿"},
+	{24000, "衣装"}, {25000, "宠物"}, {21100, "火锅"}, {21200, "炒菜"},
+	{21300, "短途车"},{21400, "长途车"},{21500, "火车"},{21600, "飞机"},
+}
+
 func printSysAbiWork() {
 	fmt.Println("---------------------------------------------------------------------------------------------------------")
 	fmt.Println()
@@ -338,9 +339,14 @@ func printSysAbiWork() {
 	fmt.Println("                              [31000:IT]                                              [32000:医药]")
 	fmt.Println("                                    ┃                                                       ┃")
 	fmt.Println("      ┏━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓             ┏━━━━━━━━━━━━╋━━━━━━━━━━━━┓")
-	fmt.Println("[31100:通讯IT]  [31200:游戏IT]  [31300:社交IT]  [31400:前端]  [31500:后端]  [32100:销售]  [32200:管理]  [32300:生产]")
+	fmt.Println("[31100:通讯IT]  [31200:游戏IT]  [31300:社交IT]  [31400:前端]  [31500:后端]  [32100:医药销售]  [32200:医药管理]  [32300:医药生产]")
 	fmt.Println()
 	fmt.Println("---------------------------------------------------------------------------------------------------------")
+}
+
+var sysAbisWork = []sysAbi{{30000, "职业"}, {31000, "IT"}, {32000, "医药"}, {31100, "通讯IT"},
+	{31200, "游戏IT"}, {31300, "社交IT"}, {31400, "前端"}, {31500, "后端"},
+	{32100, "医药销售"},{32200, "医药管理"},{32300, "医药生产"},
 }
 
 func printSysAbiTravel()  {
@@ -354,6 +360,9 @@ func printSysAbiTravel()  {
 	fmt.Println("-------------------------------")
 }
 
+var sysAbisTravel = []sysAbi{{40000, "旅游"}, {41000, "国内旅游"}, {42000, "国外旅游"},
+}
+
 func printSysAbiHelp() {
 	fmt.Println("-------------------------------")
 	fmt.Println()
@@ -365,15 +374,84 @@ func printSysAbiHelp() {
 	fmt.Println("-------------------------------")
 }
 
+var sysAbisHelp = []sysAbi{{50000, "帮忙"}, {51000, "帮小忙"}, {52000, "帮大忙"},
+}
+
+func printSysAbisSports() {
+	fmt.Println("-------------------------------------------------------------------")
+	fmt.Println()
+	fmt.Println("                     [60000:运动]")
+	fmt.Println("                           ┃")
+	fmt.Println("            ┏━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━┓")
+	fmt.Println("      [61000:球类运动]                     [62000:器械类运动]")
+	fmt.Println("            ┃                                  ┃   ")
+	fmt.Println("      ┏━━━━━┻━━━━━━┓            ┏━━━━━━━━━━━━━━╋━━━━━━━━━━━━┓")
+	fmt.Println("[61100:足球]  [61200:篮球]  [62100:自行车]  [62200:健身]  [62300:滑板] ")
+	fmt.Println()
+	fmt.Println("--------------------------------------------------------------------")
+}
+
+var sysAbisSports = []sysAbi{{60000, "运动"}, {61000, "球类运动"}, {62000, "器械类运动"}, {61100, "足球"},
+	{61200, "篮球"}, {62100, "自行车"}, {62200, "健身"}, {62300, "滑板"},
+}
+
 func printSysAbiAll()  {
-	printSysAbisSports()
 	printSysAbisEntertainment()
 	printSysAbisLiving()
 	printSysAbiWork()
 	printSysAbiTravel()
 	printSysAbiHelp()
+	printSysAbisSports()
 }
 
+type sysAbi struct {
+	id  int
+	abi string
+}
+
+func GenerateSysIDToAbiMap() map[int]string {
+	sysAbis := make([]sysAbi, 0)
+	sysAbis = append(sysAbis, sysAbisEntertainment...)
+	sysAbis = append(sysAbis, sysAbisLiving...)
+	sysAbis = append(sysAbis, sysAbisWork...)
+	sysAbis = append(sysAbis, sysAbisTravel...)
+	sysAbis = append(sysAbis, sysAbisHelp...)
+	sysAbis = append(sysAbis, sysAbisSports...)
+
+	IDToAbiMap := make(map[int]string)
+
+	for _, abi := range sysAbis {
+		IDToAbiMap[abi.id] = abi.abi
+	}
+
+	return IDToAbiMap
+}
+
+func GenerateSysAbiToIDMap() map[string]int {
+	sysAbis := make([]sysAbi, 0)
+	sysAbis = append(sysAbis, sysAbisEntertainment...)
+	sysAbis = append(sysAbis, sysAbisLiving...)
+	sysAbis = append(sysAbis, sysAbisWork...)
+	sysAbis = append(sysAbis, sysAbisTravel...)
+	sysAbis = append(sysAbis, sysAbisHelp...)
+	sysAbis = append(sysAbis, sysAbisSports...)
+
+	AbiToIDMap := make(map[string]int)
+
+	for _, abi := range sysAbis {
+		AbiToIDMap[abi.abi] = abi.id
+	}
+
+	return AbiToIDMap
+}
+
+func printUserAbis(abiIDs []int) {
+	fmt.Println("当前用户的能力列表：")
+	for _, id := range abiIDs {
+		fmt.Printf("%d-[%s] | ", id, ClientIDToAbiMap[id])
+	}
+	fmt.Println()
+}
 
 func (u *User)EditAbilities() {
 	if u.ID == InvalidUserID {
@@ -383,13 +461,19 @@ func (u *User)EditAbilities() {
 
 	var cmd string
 	var anum string
-	var abi string
+	var abiID string
 
-	fmt.Println("能力图如下：")
+	fmt.Println("系统能力图如下：")
 	printSysAbiAll()
 
+	curAbiIDs := make([]int, 0)
+	for _, abi := range u.info.Abilities.ABIs {
+		curAbiIDs = append(curAbiIDs, ClientAbiToIDMap[abi.ABI])
+	}
+
+	u.printUserAbilities()
+
 	for {
-		u.printUserAbilities()
 	    fmt.Print("删除能力请输入d，添加能力请输入a，完成请输入f：")
 		fmt.Scanf("%s", &cmd)
 		if cmd == "f" {
@@ -398,33 +482,42 @@ func (u *User)EditAbilities() {
 
 		if cmd == "d" {
 			for {
-				fmt.Print("请输入要删除的一个能力的编号(删除结束请输入f):")
+				fmt.Print("请输入要删除的一个能力的编号(结束请输入f):")
 				fmt.Scanf("%s", &anum)
 				if anum == "f" {
 					break
 				} else {
-					index, _ := strconv.Atoi(anum)
-					if index >= 0 && index < len(u.info.Abilities) {
-						u.info.Abilities = append(u.info.Abilities[:index], u.info.Abilities[index+1:]...)
+					id, _ := strconv.Atoi(anum)
+					if _, ok := ClientIDToAbiMap[id]; ok {
+						for index, curID := range curAbiIDs {
+							if curID == id {
+								curAbiIDs = append(curAbiIDs[:index], curAbiIDs[index+1:]...)
+							}
+						}
 					}
-					u.printUserAbilities()
+					printUserAbis(curAbiIDs)
 				}
 			}
 		}
 
 		if cmd == "a" {
 			for {
-				fmt.Print("请输入要添加的一个能力(结束请输入f):")
-				fmt.Scanf("%s", &abi)
-				if abi == "f" {
+				fmt.Print("请输入要添加的一个能力的编号(结束请输入f):")
+				fmt.Scanf("%s", &abiID)
+				if abiID == "f" {
 					break
 				} else {
-					u.info.Abilities = append(u.info.Abilities, abi)
-					u.printUserAbilities()
+					id, _ := strconv.Atoi(abiID)
+					if _, ok := ClientIDToAbiMap[id]; ok {
+						curAbiIDs = append(curAbiIDs, id)
+					}
+					printUserAbis(curAbiIDs)
 				}
 			}
 		}
     }
+
+	u.info.Abilities = u.generateAbiHeapByAbiIndexes(curAbiIDs)
 
 	fmt.Println("正在修改用户能力...")
 
@@ -576,6 +669,54 @@ func (u *User)EditLocations() {
 	return
 }
 
+func (u *User)generateAbiHeapByAbiIndexes(abiIDs []int) *comm.AbisHeap {
+	out := &comm.AbisHeap{
+		ABIs: make([]*comm.AbiNode, 0),
+	}
+	out.ABIs = append(out.ABIs, &comm.AbiNode{})
+	outIndex := 1
+
+	abiIndexMap := make(map[string]int)
+
+	divideNumbers := []int{10000, 1000, 100, 10, 1}
+
+	for divideNum := range divideNumbers {
+		for _, id := range abiIDs {
+			curID := (id/divideNum)*divideNum
+			curAbi := ClientIDToAbiMap[curID]
+			_, ok := abiIndexMap[curAbi]
+			if !ok {
+				parentIndex := 0
+				if divideNum == 10000 {
+					parentIndex = 0
+				} else {
+					parentAbi := ClientIDToAbiMap[(id/(divideNum*10))*(divideNum*10)]
+					parentIndex = abiIndexMap[parentAbi]
+				}
+				var exp int32 = 0
+				if u.info.Abilities != nil {
+					for _, uAbi := range u.info.Abilities.ABIs {
+						if curAbi == uAbi.ABI {
+							exp = uAbi.Experience
+						}
+					}
+				}
+				out.ABIs = append(out.ABIs, &comm.AbiNode{
+					ABI: curAbi,
+					Experience: exp,
+					ParentIndex: int32(parentIndex),
+				})
+				abiIndexMap[curAbi] = outIndex
+				outIndex++
+			}
+		}
+	}
+
+	fmt.Printf("\nAbis Heap : %v\n", out)
+
+	return out
+}
+
 func (u *User)AddInfo() {
 	if u.ID == InvalidUserID {
 		fmt.Println("用户未登录，无法编辑用户能力。")
@@ -605,8 +746,9 @@ func (u *User)AddInfo() {
 	fmt.Print("年龄 : ")
 	fmt.Scanf("%d", &newUserInfo.Age)
 
-	tmpAbisIndexes := make([]int, 0)
+	tmpAbisIDs := make([]int, 0)
 	fmt.Println("请添加能力项，能力图如下")
+	printSysAbiAll()
 	for {
 		var ability string
 		fmt.Print("输入要添加的能力项编号(添加完成请输入字母'f') : ")
@@ -614,12 +756,18 @@ func (u *User)AddInfo() {
 		if ability == "f" {
 			break
 		} else {
-			index, _ := strconv.Atoi(ability)
-			tmpAbisIndexes = append(tmpAbisIndexes, index)
+			id, _ := strconv.Atoi(ability)
+			if _, ok := ClientIDToAbiMap[id]; ok {
+				tmpAbisIDs = append(tmpAbisIDs, id)
+			}
 		}
 	}
 
-	newUserInfo.Abilities = generateAbiHeapByAbiIndexes(tmpAbisIndexes)
+	for _, curAbi := range u.info.Abilities.ABIs {
+		tmpAbisIDs = append(tmpAbisIDs, ClientAbiToIDMap[curAbi.ABI])
+	}
+
+	newUserInfo.Abilities = u.generateAbiHeapByAbiIndexes(tmpAbisIDs)
 
 	fmt.Print("设置当前位置坐标 : ")
 	fmt.Scanf("%f,%f", &newUserInfo.CurLocation.Longitude, &newUserInfo.CurLocation.Latitude)

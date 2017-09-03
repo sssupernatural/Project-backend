@@ -32,7 +32,7 @@ func New(conf *TMServerConfig) *TMServer {
 	tasksdc := dataClient.New(&conf.TasksDataCenterConf)
 	tasksdc.InitTasksData()
 	usersdc := dataClient.New(&conf.UsersDataCenterConf)
-	usersdc.InitTasksData()
+	usersdc.InitUsersData()
 
 	return &TMServer{
 		addr: conf.Addr,
@@ -122,8 +122,6 @@ func (s *TMServer)CreateTask(ctx context.Context, ctReq *tmrpc.CreateTaskReq) (*
 	}
 
 	go s.searchResponsersAsync(srreq)
-
-	logger.Error("3")
 
 	//返回用户任务创建结果
 	resp := generateCreateTaskResp(comm.RetOK)

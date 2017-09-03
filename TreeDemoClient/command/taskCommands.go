@@ -9,6 +9,7 @@ import (
 	"time"
 	"io/ioutil"
 	"errors"
+	"strconv"
 )
 
 const (
@@ -52,8 +53,8 @@ func printTaskCreateInfo(t *comm.TaskCreateInfo)  {
 	}
 	fmt.Println()
 	fmt.Print("| | 响应者能力 : ")
-	for _, a := range t.Abilities {
-		fmt.Printf("[%s] |", a)
+	for _, a := range t.Abilities.ABIs {
+		fmt.Printf("[%s] |", a.ABI)
 	}
 	fmt.Println()
 	fmt.Println("| -------------------------TaskDesc-------------------------")
@@ -67,7 +68,6 @@ func (u *User)CreateTask() {
 	createTaskInfo := &comm.TaskCreateInfo {
 		RequesterID: u.ID,
 		Locations: make([]*comm.Location, 0),
-		Abilities: make([]string, 0),
 	}
 
 	var option int32
@@ -87,7 +87,7 @@ func (u *User)CreateTask() {
 	fmt.Scanf("%d-%d", &createTaskInfo.AgeMin, &createTaskInfo.AgeMax)
 
 	for {
-		fmt.Print("添加响应者位置坐标(eg:1,1): ")
+		fmt.Print("添加响应者位置坐标(结束请输入(0,0)): ")
 		curloc := &comm.Location{}
 		fmt.Scanf("%f,%f", &curloc.Longitude, &curloc.Latitude)
 		if curloc.Latitude == 0 && curloc.Longitude == 0 {
@@ -97,16 +97,24 @@ func (u *User)CreateTask() {
 		}
 	}
 
+	fmt.Println("系统能力图如下：")
+	printSysAbiAll()
+	taskAbis := make([]int, 0)
 	for {
-		fmt.Print("添加响应者能力(eg:帮忙): ")
+		fmt.Print("添加响应者能力(输入能力的系统能力编号,结束请输入'f'): ")
 		var curabi string
 		fmt.Scanf("%s", &curabi)
-		if curabi == "" {
+		if curabi == "f" {
 			break
 		} else {
-			createTaskInfo.Abilities = append(createTaskInfo.Abilities, curabi)
+			id, _ := strconv.Atoi(curabi)
+			if _, ok := ClientIDToAbiMap[id]; ok {
+				taskAbis = append(taskAbis, id)
+			}
 		}
 	}
+
+	createTaskInfo.Abilities = u.generateAbiHeapByAbiIndexes(taskAbis)
 
 	printTaskCreateInfo(createTaskInfo)
 	fmt.Println("创建中...")
