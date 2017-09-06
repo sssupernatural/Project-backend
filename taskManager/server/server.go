@@ -88,7 +88,9 @@ func (s *TMServer)searchResponsersAsync(srreq *smrpc.SearchResponsersReq) {
 
 	var ti *comm.TaskInfo = s.tasks[resp.Task.ID]
 	for _, responser := range resp.Task.Responsers {
-		s.userTasks[responser] = append(s.userTasks[responser], ti)
+		if responser != ti.Desc.RequesterID {
+			s.userTasks[responser] = append(s.userTasks[responser], ti)
+		}
 	}
 	s.tasksLock.Unlock()
 
