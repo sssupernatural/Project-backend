@@ -179,6 +179,8 @@ func (s uint32Slice) RemoveDuplicate() []uint32 {
 
 	if len(s) > 1 && s[len(s)-1] != s[len(s)-2] {
 		out = append(out, s[len(s)-1])
+	} else if len(s) == 1 {
+		out = append(out, s[0])
 	}
 
 	return out
