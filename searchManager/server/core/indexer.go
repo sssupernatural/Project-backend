@@ -54,16 +54,25 @@ func (indexer *Indexer)constructAbiIndicesHeap(abisHeap *comm.AbisHeap) *abiTree
 	}
 
 	indexer.tableLock.RLock()
-	for _, abi := range abisHeap.ABIs {
-		abiIDs := make([]uint32, len(indexer.tableLock.table[abi.ABI].IDs))
-		copy(abiIDs, indexer.tableLock.table[abi.ABI].IDs)
-		abiIndices := abiTree.AbiIndices{
-			Abi: abi.ABI,
-			ParentIndex: abi.ParentIndex,
-			IDs: abiIDs,
-		}
+	for rangeIndex, abi := range abisHeap.ABIs {
+		if _, ok := indexer.tableLock.table[abi.ABI]; ok && rangeIndex != 0 {
+			abiIDs := make([]uint32, len(indexer.tableLock.table[abi.ABI].IDs))
+			copy(abiIDs, indexer.tableLock.table[abi.ABI].IDs)
+			abiIndices := abiTree.AbiIndices{
+				Abi: abi.ABI,
+				ParentIndex: abi.ParentIndex,
+				IDs: abiIDs,
+			}
 
-		abiIndicesHeap.AbiIndices = append(abiIndicesHeap.AbiIndices, abiIndices)
+			abiIndicesHeap.AbiIndices = append(abiIndicesHeap.AbiIndices, abiIndices)
+		} else {
+			abiIndices := abiTree.AbiIndices{
+				Abi: abi.ABI,
+				ParentIndex: abi.ParentIndex,
+			}
+
+			abiIndicesHeap.AbiIndices = append(abiIndicesHeap.AbiIndices, abiIndices)
+		}
 	}
 	indexer.tableLock.RUnlock()
 
@@ -112,6 +121,8 @@ func (indexer *Indexer) AddUserToCache(user *types.UserIndex, forceUpdate bool) 
 		logger.Fatal("索引器尚未初始化")
 	}
 
+	logger.Printf("Add user to cache: %v!\n", *user)
+
 	indexer.addCacheLock.Lock()
 	//SWT : 将用户添加到"等待加入索引的用户缓存区"
 	if user != nil {
@@ -120,6 +131,7 @@ func (indexer *Indexer) AddUserToCache(user *types.UserIndex, forceUpdate bool) 
 	}
 	//缓存满或者强制更新时，将"等待加入索引的用户缓存区"中的用户添加到索引表中
 	if indexer.addCacheLock.addCachePointer >= indexer.initOptions.UserCacheSize || forceUpdate {
+		logger.Println("add User now!")
 		indexer.tableLock.Lock()
 		position := 0
 		for i := 0; i < indexer.addCacheLock.addCachePointer; i++ {
@@ -171,6 +183,10 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 		logger.Fatal("索引器尚未初始化")
 	}
 
+	for index, tmpUser := range *users {
+		logger.Printf("Add user %d : %v.\n", index, tmpUser)
+	}
+
 	indexer.tableLock.Lock()
 	defer indexer.tableLock.Unlock()
 	indexPointers := make(map[string]int, len(indexer.tableLock.table))
@@ -178,6 +194,7 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 
 	// UserID 递增顺序遍历插入用户保证索引移动次数最少
 	for i, user := range *users {
+		logger.Printf("cur add user : %v.\n", user)
 		if i < len(*users)-1 && (*users)[i].ID == (*users)[i+1].ID {
 			// 如果有重复用户加入，因为稳定排序，只加入最后一个
 			continue
@@ -188,6 +205,7 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 			continue
 		}
 
+		logger.Println("add user real ")
 		userIdIsNew := true
 		for _, keyAbi := range user.KeyAbis {
 			indices, foundKeyAbi := indexer.tableLock.table[keyAbi.Abi]
@@ -233,6 +251,17 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 			indexer.tableLock.usersState[user.ID] = 0
 			indexer.numUsers++
 		}
+
+		logger.Println("after add users abimap :")
+		for abimkey, abim := range indexer.tableLock.table {
+			logger.Printf("[%s|%v] - ", abimkey, *abim)
+		}
+		logger.Println()
+		logger.Println("after add users locmap :")
+		for locmkey, locm := range indexer.tableLock.locTable {
+			logger.Printf("[%v|%v] - ", locmkey, *locm)
+		}
+		logger.Println()
 	}
 }
 
@@ -364,22 +393,27 @@ func (indexer *Indexer) Lookup(
 		logger.Fatal("索引器尚未初始化")
 	}
 
+	/*
 	if indexer.numUsers == 0 {
 		return
 	}
+	*/
 	numUsers = 0
 
 	abisIndicesHeap := indexer.constructAbiIndicesHeap(abisHeap)
+	logger.Printf("constructed abi indices heap : %v\n", abisIndicesHeap)
 	if len(locationOwners) == 0 {
 		abisIndicesHeap.FilterIDsByAbisIndices()
 	} else {
 		locationOwnersIds := indexer.getLocationOwnersIDs(locationOwners)
 		abisIndicesHeap.FilterIDsByAbisIndicesAndLocationIndices(locationOwnersIds)
 	}
+	logger.Printf("filtered abi indices heap : %v\n", abisIndicesHeap)
 
 	newAbiTree := abisIndicesHeap.ConstructAbiTree()
 
 	findUsers := newAbiTree.SearchIDs(indexer.initOptions.SearchResultMax)
+	logger.Printf("Tree find Users : %v\n", findUsers)
 
 	resultUsers := make([]types.IndexedUser, 0)
 	for _, id := range findUsers {

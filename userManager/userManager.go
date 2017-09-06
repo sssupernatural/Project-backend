@@ -77,11 +77,7 @@ func main() {
 		return
 	}
 
-	err = umServer.Init()
-	if err != nil {
-		fmt.Printf("Init User Manager Server failed! Error : %s\n", err)
-		return
-	}
+	go umServer.Init()
 
 	lis, err := net.Listen("tcp", umConfig.UMAddr)
 	if err != nil {
@@ -91,5 +87,6 @@ func main() {
 	s := grpc.NewServer()
 
 	umrpc.RegisterUserManagerServer(s, umServer)
+
 	s.Serve(lis)
 }

@@ -12,6 +12,8 @@ import (
 	"dataCenter/dataClient"
 	"searchManager/server/core"
 	"searchManager/server/engine"
+	"searchManager/server/abiTree"
+	"searchManager/server/types"
 )
 
 var smsConfigPath string
@@ -39,7 +41,8 @@ func initSMLog(path string) error {
 	server.SetServerLogger(file)
 	core.SetCoreLogger(file)
 	engine.SetEngineLogger(file)
-
+	abiTree.SetAbiTreeLogger(file)
+	types.SetTypesLogger(file)
 	return nil
 }
 
@@ -50,7 +53,7 @@ func main() {
 
 	_, err := toml.DecodeFile(smsConfigPath, &smConfig)
 
-	fmt.Printf("Decode UM config : lgpath(%s), umaddr(%s), dcaddr(%s), dcuser(%s), dcpw(%s), dcdb(%s).\n",
+	fmt.Printf("Decode SM config : lgpath(%s), smaddr(%s), dcaddr(%s), dcuser(%s), dcpw(%s), dcdb(%s).\n",
 				smConfig.SMLogPath, smConfig.SMAddr, smConfig.DCAddr, smConfig.DCUser, smConfig.DCPassword,
 				smConfig.DCDatabase)
 

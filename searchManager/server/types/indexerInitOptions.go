@@ -2,7 +2,7 @@ package types
 
 const (
 	defaultUserCacheSize   = 100
-	defaultSearchResultMax = 10
+	defaultSearchResultMax = 1
 )
 
 type IndexerInitOptions struct {

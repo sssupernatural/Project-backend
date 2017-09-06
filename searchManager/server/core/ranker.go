@@ -4,6 +4,8 @@ import (
 	"sort"
 	"sync"
 	"searchManager/server/types"
+	"external/comm"
+	"reflect"
 )
 
 type Ranker struct {
@@ -25,8 +27,31 @@ func (ranker *Ranker) Init() {
 	ranker.lock.users = make(map[uint32]bool)
 }
 
+func (ranker *Ranker) SetUserRankFieldStatus(userID uint32, status int32) {
+	if ranker.initialized == false {
+		logger.Fatal("排序器尚未初始化")
+	}
+
+	ranker.lock.Lock()
+	if _, ok := ranker.lock.fields[userID]; !ok {
+		logger.Errorf("[Ranker]Set user rank field status failed, uid:%d, status:%s.",
+			userID, comm.DescStatus(status))
+	} else {
+		userRankField := ranker.lock.fields[userID]
+		if reflect.TypeOf(userRankField) != reflect.TypeOf(types.SMScoringField{}) {
+			logger.Errorf("[Ranker]Set user rank field status failed, invalid field type, uid:%d, status:%s.",
+				userID, comm.DescStatus(status))
+		} else {
+			uf := userRankField.(types.SMScoringField)
+			uf.Status = status
+		}
+	}
+
+	ranker.lock.Unlock()
+}
+
 // 给某个用户添加评分字段
-func (ranker *Ranker) AddDoc(userID uint32, fields interface{}) {
+func (ranker *Ranker) AddUserRankField(userID uint32, fields interface{}) {
 	if ranker.initialized == false {
 		logger.Fatal("排序器尚未初始化")
 	}
@@ -38,7 +63,7 @@ func (ranker *Ranker) AddDoc(userID uint32, fields interface{}) {
 }
 
 // 删除某个用户的评分字段
-func (ranker *Ranker) RemoveDoc(userID uint32) {
+func (ranker *Ranker) RemoveUserRankField(userID uint32) {
 	if ranker.initialized == false {
 		logger.Fatal("排序器尚未初始化")
 	}
@@ -73,7 +98,9 @@ func (ranker *Ranker) Rank(
 			fs := ranker.lock.fields[u.ID]
 			ranker.lock.RUnlock()
 			// 计算评分并剔除没有分值的用户
+			logger.Infof("[Ranker]Score User, %v.", u)
 			scores := options.ScoringCriteria.Score(u, fs, fields)
+			logger.Infof("[Ranker]After score : %v.", scores)
 			if len(scores) > 0 {
 				if !countDocsOnly {
 					outputUsers = append(outputUsers, types.ScoredUser{

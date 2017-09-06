@@ -3,6 +3,7 @@ package abiTree
 import (
 	"testing"
 	"fmt"
+	"time"
 )
 
 func TestSaveSortedDuplicate(t *testing.T)  {
@@ -28,7 +29,7 @@ func TestRemoveSortedDuplicate(t *testing.T)  {
 
 func TestRemoveDuplicateAbiIndicesIDs(t *testing.T) {
 	h := AbiIndicesHeap{
-		AbiIndices: make([]AbiIndices, 6),
+		AbiIndices: make([]AbiIndices, 3),
 	}
 
 	h.AbiIndices[0] = AbiIndices{
@@ -36,21 +37,24 @@ func TestRemoveDuplicateAbiIndicesIDs(t *testing.T) {
 		ParentIndex: 0,
 	}
 
+	/*
 	ids1 := []uint32{4,5,6,7,8,10}
 	h.AbiIndices[1] = AbiIndices{
 		Abi: "运动",
 		ParentIndex: 0,
 		IDs: ids1,
 	}
+	*/
 
 
 	ids2 := []uint32{3,5,8,9,10}
-	h.AbiIndices[2] = AbiIndices{
+	h.AbiIndices[1] = AbiIndices{
 		Abi: "艺术",
 		ParentIndex: 0,
 		IDs: ids2,
 	}
 
+	/*
 	ids3 := []uint32{5,6}
 	h.AbiIndices[3] = AbiIndices{
 		Abi: "足球",
@@ -64,9 +68,10 @@ func TestRemoveDuplicateAbiIndicesIDs(t *testing.T) {
 		ParentIndex: 1,
 		IDs: ids4,
 	}
+	*/
 
 	ids5 := []uint32{5,9,10,11}
-	h.AbiIndices[5] = AbiIndices{
+	h.AbiIndices[2] = AbiIndices{
 		Abi: "文学",
 		ParentIndex: 2,
 		IDs: ids5,
@@ -111,4 +116,13 @@ func TestSplitPerm(t *testing.T) {
 	sp.perm(0, len(sp.split))
 
 	fmt.Printf("\n%v\n", sp.result)
+
+	ticker := time.NewTicker(time.Second * 5)
+	go func() {
+		for _ = range ticker.C {
+			fmt.Println("!!!")
+		}
+	}()
+
+	time.Sleep(time.Second*50)
 }

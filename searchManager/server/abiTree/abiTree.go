@@ -220,7 +220,9 @@ func (t *AbiTree)searchIDsByLevelMode(mode []int) []uint32{
 		startBranchIndex := branchEndSort[i].branchIndex
 
 		for _, indices := range t.branches[startBranchIndex].nodes[mode[startBranchIndex]].abiIndices {
-			searchIDs = append(searchIDs, indices.IDs...)
+			if indices.IDs != nil && len(indices.IDs) != 0 {
+				searchIDs = append(searchIDs, indices.IDs...)
+			}
 		}
 
 		sort.Sort(uint32Slice(searchIDs))
@@ -235,7 +237,11 @@ func (t *AbiTree)searchIDsByLevelMode(mode []int) []uint32{
 
 			for _, indices := range t.branches[branchIndex].nodes[m].abiIndices {
 				fmt.Printf("compIDs : %v | ", indices.IDs)
-				searchIDs = saveSortedDuplicateIds(searchIDs, indices.IDs)
+				if indices.IDs == nil || len(indices.IDs) == 0 {
+					searchIDs = searchIDs[0:0]
+				} else {
+					searchIDs = saveSortedDuplicateIds(searchIDs, indices.IDs)
+				}
 				fmt.Printf("srcIDs : %v | ", searchIDs)
 			}
 		}
@@ -272,7 +278,7 @@ func (t *AbiTree)SearchIDs(requiredIDsNum int) []uint32 {
 			SplitResults: make([][]int, 0),
 		}
 
-		//fmt.Printf("split level : %d\n", level)
+		fmt.Printf("split level : %d\n", level)
 		abiLevel.splitLevel(level, 1)
 		for _, split := range abiLevel.SplitResults {
 			sp := &SplitPermutation{

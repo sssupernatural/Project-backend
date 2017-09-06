@@ -102,20 +102,33 @@ func (engine *Engine) Init(options types.EngineInitOptions) {
 	}
 
 	//启动周期强制刷新索引
-	go engine.ForceFlushIndexesPeriod()
+	/*
+	flushTicker := time.NewTicker(engine.initOptions.FlushIndexesPeriod)
+	logger.Printf("Start period flush: period(%v).\n", engine.initOptions.FlushIndexesPeriod)
+	go func() {
+		for _ = range flushTicker.C {
+			logger.Printf("Force flush, req num = %d.\n", engine.numIndexingRequests)
+			engine.FlushIndex()
+		}
+	}()
+	*/
 
 	return
 }
 
+/*
 func (engine *Engine)ForceFlushIndexesPeriod() {
-	tick := time.Tick(engine.initOptions.FlushIndexesPeriod)
+	logger.Println("Start period flush Indexes.")
+	tick := time.NewTicker(engine.initOptions.FlushIndexesPeriod)
 
-	for range tick {
+	for range tick.C {
+		logger.Printf("Force flush, req num = %d.\n", engine.numIndexingRequests)
 		if engine.numIndexingRequests > 0 {
 			engine.FlushIndex()
 		}
 	}
 }
+*/
 
 // 将用户加入索引
 //
@@ -145,19 +158,22 @@ func (engine *Engine) internalIndexUser(
 		atomic.AddUint64(&engine.numForceUpdatingRequests, 1)
 	}
 
-	indexerRequest := indexerAddUserRequest{
-		user: &types.UserIndex{
-			ID:      data.GetID(),
-			KeyAbis: data.GetKeyAbiIndexes(),
-			KeyLocs: data.GetKeyLocIndexes(),
-		},
-		forceUpdate: forceUpdate,
+	hash := murmur.Murmur3([]byte(fmt.Sprint("%d%v", userId, data)))
+	shard := engine.getShard(hash)
+
+	if userId != 0 {
+		indexerRequest := indexerAddUserRequest{
+			user: &types.UserIndex{
+				ID:      data.GetID(),
+				KeyAbis: data.GetKeyAbiIndexes(),
+				KeyLocs: data.GetKeyLocIndexes(),
+			},
+			forceUpdate: forceUpdate,
+		}
+
+		engine.indexerAddUserChannels[shard] <- indexerRequest
 	}
 
-	hash := murmur.Murmur3([]byte(fmt.Sprint("%d%v", userId, data)))
-
-	shard := engine.getShard(hash)
-	engine.indexerAddUserChannels[shard] <- indexerRequest
 	if forceUpdate {
 		for i := 0; i < engine.initOptions.NumShards; i++ {
 			if i == shard {
@@ -166,12 +182,15 @@ func (engine *Engine) internalIndexUser(
 			engine.indexerAddUserChannels[i] <- indexerAddUserRequest{forceUpdate: true}
 		}
 	}
-	rankerRequest := rankerAddUserRequest{
-		userID: userId,
-		fields: data.GetScoringField(),
-	}
 
-	engine.rankerAddUserChannels[shard] <- rankerRequest
+	if userId != 0 {
+		rankerRequest := rankerAddUserRequest{
+			userID: userId,
+			fields: data.GetScoringField(),
+		}
+
+		engine.rankerAddUserChannels[shard] <- rankerRequest
+	}
 }
 
 // 将用户从索引中删除
@@ -232,6 +251,11 @@ func (engine *Engine) Search(request types.SearchRequest) (output types.SearchRe
 	chan rankerReturnRequest, engine.initOptions.NumShards)
 
 	locOwners := types.GenerateLocOwner(request.Locations)
+
+	logger.Printf("search req abis : %v.\n", request.AbiHeap)
+	logger.Printf("search req locs : %v.\n", locOwners)
+
+	logger.Infof("[Engine]Rank option : %v.", rankOptions)
 
 	// 生成查找请求
 	lookupRequest := indexerLookupRequest{
@@ -294,6 +318,8 @@ func (engine *Engine) Search(request types.SearchRequest) (output types.SearchRe
 		}
 	}
 
+	logger.Infof("[Engine]Ranker output : %v.", rankOutput)
+
 	// 准备输出
 	// 仅当CountDocsOnly为false时才充填output.Docs
 	if !request.CountDocsOnly {
@@ -314,11 +340,13 @@ func (engine *Engine) Search(request types.SearchRequest) (output types.SearchRe
 	}
 	output.NumUsers = numUsers
 	output.Timeout = isTimeout
+	logger.Infof("[Engine]Search output : %v.", output)
 	return
 }
 
 // 阻塞等待直到所有索引添加完毕
 func (engine *Engine) FlushIndex() {
+	logger.Println("flush index!")
 	for {
 		runtime.Gosched()
 		if engine.numIndexingRequests == engine.numUsersIndexed &&

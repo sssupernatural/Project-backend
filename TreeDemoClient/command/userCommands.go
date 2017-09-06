@@ -260,7 +260,7 @@ func printUserInfo(u *comm.UserInfo) {
 		fmt.Println()
 	}
 
-	if len(u.Abilities.ABIs) != 0 {
+	if u.Abilities != nil {
 		fmt.Print("| | 能力 : ")
 		for _, abi := range u.Abilities.ABIs {
 			fmt.Printf("[%s(%d级)] | ", abi.ABI, getAbiLevel(abi.Experience))
@@ -320,14 +320,14 @@ func printSysAbisLiving() {
 	fmt.Println("       [21000:美食]                               [22000:交通]  [23000:住宿]  [24000:衣装] [25000:宠物]")
 	fmt.Println("             ┃                                         ┃")
 	fmt.Println("      ┏━━━━━━┻━━━━━┓            ┏━━━━━━━━━━━━━━┳━━━━━━━┻━━━━━━┳━━━━━━━━━━━━┓")
-	fmt.Println("[21100:火锅]  [21200:炒菜]  [21300:短途车]  [21400:长途车]  [21500:火车]  [21600:飞机]")
+	fmt.Println("[21100:火锅]  [21200:炒菜]  [22100:短途车]  [22200:长途车]  [22300:火车]  [22400:飞机]")
 	fmt.Println()
 	fmt.Println("---------------------------------------------------------------------------------------")
 }
 
 var sysAbisLiving = []sysAbi{{20000, "生活"}, {21000, "美食"}, {22000, "交通"}, {23000, "住宿"},
 	{24000, "衣装"}, {25000, "宠物"}, {21100, "火锅"}, {21200, "炒菜"},
-	{21300, "短途车"},{21400, "长途车"},{21500, "火车"},{21600, "飞机"},
+	{22100, "短途车"},{22200, "长途车"},{22300, "火车"},{22400, "飞机"},
 }
 
 func printSysAbiWork() {
@@ -680,7 +680,7 @@ func (u *User)generateAbiHeapByAbiIndexes(abiIDs []int) *comm.AbisHeap {
 
 	divideNumbers := []int{10000, 1000, 100, 10, 1}
 
-	for divideNum := range divideNumbers {
+	for _, divideNum := range divideNumbers {
 		for _, id := range abiIDs {
 			curID := (id/divideNum)*divideNum
 			curAbi := ClientIDToAbiMap[curID]
@@ -711,8 +711,6 @@ func (u *User)generateAbiHeapByAbiIndexes(abiIDs []int) *comm.AbisHeap {
 			}
 		}
 	}
-
-	fmt.Printf("\nAbis Heap : %v\n", out)
 
 	return out
 }
@@ -763,8 +761,10 @@ func (u *User)AddInfo() {
 		}
 	}
 
-	for _, curAbi := range u.info.Abilities.ABIs {
-		tmpAbisIDs = append(tmpAbisIDs, ClientAbiToIDMap[curAbi.ABI])
+	if u.info.Abilities != nil {
+		for _, curAbi := range u.info.Abilities.ABIs {
+			tmpAbisIDs = append(tmpAbisIDs, ClientAbiToIDMap[curAbi.ABI])
+		}
 	}
 
 	newUserInfo.Abilities = u.generateAbiHeapByAbiIndexes(tmpAbisIDs)

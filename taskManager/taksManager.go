@@ -50,7 +50,7 @@ func main() {
 
 	_, err := toml.DecodeFile(tmsConfigPath, &tmConfig)
 
-	fmt.Printf("Decode UM config : lgpath(%s), umaddr(%s), dcaddr(%s), dcuser(%s), dcpw(%s), tasksdcdb(%s), usersdcdb(%s).\n",
+	fmt.Printf("Decode TM config : lgpath(%s), tmaddr(%s), dcaddr(%s), dcuser(%s), dcpw(%s), tasksdcdb(%s), usersdcdb(%s).\n",
 				tmConfig.TMLogPath, tmConfig.TMAddr, tmConfig.DCAddr, tmConfig.DCUser, tmConfig.DCPassword,
 				tmConfig.TasksDCDatabase, tmConfig.UsersDCDatabase)
 

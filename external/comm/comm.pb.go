@@ -37,7 +37,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type UserCheckInfo struct {
-	PhoneNumber string `protobuf:"bytes,1,opt,name=PhoneNumber,json=phoneNumber" json:"PhoneNumber,omitempty"`
+	PhoneNumber string `protobuf:"bytes,1,opt,name=PhoneNumber,json=phoneNumber" json:"PhoneNumber,omitempty" sql:",pk"`
 	Password    string `protobuf:"bytes,2,opt,name=Password,json=password" json:"Password,omitempty"`
 	Name        string `protobuf:"bytes,3,opt,name=Name,json=name" json:"Name,omitempty"`
 }

@@ -29,18 +29,21 @@ type rankerRemoveUserRequest struct {
 func (engine *Engine) rankerAddUserWorker(shard int) {
 	for {
 		request := <-engine.rankerAddUserChannels[shard]
-		engine.rankers[shard].AddDoc(request.userID, request.fields)
+		engine.rankers[shard].AddUserRankField(request.userID, request.fields)
 	}
 }
 
 func (engine *Engine) rankerRankWorker(shard int) {
 	for {
 		request := <-engine.rankerRankChannels[shard]
+		logger.Infof("[Ranker]Receive rank request, req : %v.", request)
+		logger.Infof("[Ranker]Rank option : %v.", request.options)
 		if request.options.MaxOutputs != 0 {
 			request.options.MaxOutputs += request.options.OutputOffset
 		}
 		request.options.OutputOffset = 0
 		outputUsers, numUsers := engine.rankers[shard].Rank(request.users, request.options, request.countDocsOnly, request.fields)
+		logger.Infof("[Ranker]output Users after rank : %v.", outputUsers)
 		request.rankerReturnChannel <- rankerReturnRequest{users: outputUsers, numUsers: numUsers}
 	}
 }
@@ -48,6 +51,6 @@ func (engine *Engine) rankerRankWorker(shard int) {
 func (engine *Engine) rankerRemoveUserWorker(shard int) {
 	for {
 		request := <-engine.rankerRemoveUserChannels[shard]
-		engine.rankers[shard].RemoveDoc(request.userID)
+		engine.rankers[shard].RemoveUserRankField(request.userID)
 	}
 }

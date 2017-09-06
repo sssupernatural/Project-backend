@@ -19,8 +19,8 @@ type SMScoringField struct {
 	Locations   []*comm.Location
 }
 
-func (d *UserIndexData)GetScoringField() *SMScoringField {
-	sf := &SMScoringField{
+func (d *UserIndexData)GetScoringField() SMScoringField {
+	sf := SMScoringField{
 		Sex:         d.Info.Sex,
 		Age:         d.Info.Age,
 		Status:      d.Info.Status,

@@ -61,6 +61,7 @@ func (engine *Engine) indexerLookupWorker(shard int) {
 	for {
 		request := <-engine.indexerLookupChannels[shard]
 
+		logger.Println("Indexer Receiver a search Req.")
 		var users []types.IndexedUser
 		var numUsers int
 		if request.userIds == nil {
@@ -68,6 +69,7 @@ func (engine *Engine) indexerLookupWorker(shard int) {
 		} else {
 			users, numUsers = engine.indexers[shard].Lookup(request.abisHeap, request.locationOwners, request.userIds, request.countDocsOnly)
 		}
+		logger.Printf("Indexer find users : %v\n", users)
 
 		if request.countDocsOnly {
 			request.rankerReturnChannel <- rankerReturnRequest{numUsers: numUsers}
@@ -91,6 +93,7 @@ func (engine *Engine) indexerLookupWorker(shard int) {
 			continue
 		}
 
+		logger.Infof("[Indexer]Rank option : %v.", request.options)
 		rankerRequest := rankerRankRequest{
 			countDocsOnly:       request.countDocsOnly,
 			users:               users,

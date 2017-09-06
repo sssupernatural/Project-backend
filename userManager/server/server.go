@@ -7,7 +7,6 @@ import (
 	"external/comm"
 	"dataCenter/dataClient"
 	"userManager/rpc"
-	"errors"
 )
 
 type UMServerConfig struct {
@@ -33,11 +32,13 @@ func New(conf *UMServerConfig) *UMServer {
 }
 
 //必须在启动SMCG后才能调用该初始化
-func (s *UMServer)Init() error {
+func (s *UMServer)Init() {
 	allUsers, err := s.dataClient.GetAllUsers()
 	if err != nil {
-		return nil
+		return
 	}
+
+	logger.Printf("all users : %v\n", allUsers)
 
 	client := SMCG.GetClient()
 	defer SMCG.ReturnClient(client)
@@ -45,11 +46,15 @@ func (s *UMServer)Init() error {
 	var num int32
 	num = 0
 	insertUsers := make([]*comm.UserInfo, 0)
-	for _, u := range allUsers {
+	for _, user := range allUsers {
+		u := comm.UserInfo{}
+		u = user
 		if u.Abilities == nil {
 			continue
 		}
+		logger.Printf("append user : %v\n", u)
 		insertUsers = append(insertUsers, &u)
+
 		num++
 		if num == 10 {
 			ir := &smrpc.InsertUserRecordsReq{
@@ -58,9 +63,9 @@ func (s *UMServer)Init() error {
 			}
 			resp, err := client.InsertUserRecords(context.Background(), ir)
 			if resp.Comm.ErrorCode != comm.RetOK {
-				return errors.New(resp.Comm.ErrorMsg)
+				return
 			} else if err != nil {
-				return err
+				return
 			}
 
 			num = 0
@@ -73,15 +78,18 @@ func (s *UMServer)Init() error {
 			UserRecordNum: num,
 			Users: insertUsers,
 		}
+		for _, tmpu := range ir.Users {
+			logger.Printf("send user : %v\n", *tmpu)
+		}
 		resp, err := client.InsertUserRecords(context.Background(), ir)
 		if resp.Comm.ErrorCode != comm.RetOK {
-			return errors.New(resp.Comm.ErrorMsg)
+			return
 		} else if err != nil {
-			return err
+			return
 		}
 	}
 
-	return nil
+	return
 }
 
 func generateRespComm(errCode int32) *umrpc.UserManagerRespComm {
