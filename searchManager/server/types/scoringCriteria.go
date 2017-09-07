@@ -36,14 +36,12 @@ func (rule RankByInfo) Score(user IndexedUser, fields interface{}, requestFields
 	f := fields.(SMScoringField)
 	rf := requestFields.(SMScoringField)
 
-	logger.Printf("rf.sex : %s, f.sex : %s\n.", comm.DescSex(rf.Sex), comm.DescSex(f.Sex))
 	if rf.Sex != comm.UserSexUnknown {
 		if rf.Sex != f.Sex {
 			return nil
 		}
 	}
 
-	logger.Printf("rf.agemax : %d, rf.agemin:%d, f.age:%d.\n.", rf.AgeMax, rf.AgeMin, f.Age)
 	if rf.AgeMin > f.Age || rf.AgeMax < f.Age {
 		return nil
 	}

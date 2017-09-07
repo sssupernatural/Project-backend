@@ -47,8 +47,6 @@ func initSMLog(path string) error {
 }
 
 func main() {
-
-	fmt.Println("4444")
 	flag.Parse()
 
 	_, err := toml.DecodeFile(smsConfigPath, &smConfig)

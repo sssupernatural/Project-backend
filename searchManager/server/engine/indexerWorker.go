@@ -30,6 +30,11 @@ type indexerRemoveUserRequest struct {
 func (engine *Engine) indexerAddUserWorker(shard int) {
 	for {
 		request := <-engine.indexerAddUserChannels[shard]
+		if request.user != nil {
+			logger.Infof("[Indexer]Handle indexer add user req: user id(%d).", request.user.ID)
+		} else {
+			logger.Info("[Indexer]Handle user index force update.")
+		}
 		engine.indexers[shard].AddUserToCache(request.user, request.forceUpdate)
 		if request.user != nil {
 			atomic.AddUint64(&engine.numAbiIndexAdded,
@@ -61,7 +66,7 @@ func (engine *Engine) indexerLookupWorker(shard int) {
 	for {
 		request := <-engine.indexerLookupChannels[shard]
 
-		logger.Println("Indexer Receiver a search Req.")
+		logger.Info("[Indexer]Shard %d Handle indexer lookup req.", shard)
 		var users []types.IndexedUser
 		var numUsers int
 		if request.userIds == nil {
@@ -69,7 +74,7 @@ func (engine *Engine) indexerLookupWorker(shard int) {
 		} else {
 			users, numUsers = engine.indexers[shard].Lookup(request.abisHeap, request.locationOwners, request.userIds, request.countDocsOnly)
 		}
-		logger.Printf("Indexer find users : %v\n", users)
+		logger.Infof("[Indexer]Indexer lookup find users : %v.", users)
 
 		if request.countDocsOnly {
 			request.rankerReturnChannel <- rankerReturnRequest{numUsers: numUsers}

@@ -20,7 +20,7 @@ var (
 		UserCacheSize: defaultUserCacheSize,
 	}
 
-	defaultFlushIndexesPeriod = time.Second * 10
+	defaultFlushIndexesPeriod = time.Second * 30
 )
 
 type EngineInitOptions struct {
@@ -48,6 +48,18 @@ type EngineInitOptions struct {
 
 	//强制刷新索引周期
 	FlushIndexesPeriod time.Duration
+}
+func (options *EngineInitOptions) logEngineInitOptions() {
+	logger.Infof("[Engine]Init Options : ")
+	logger.Infof("[Engine]NumShards : %d.", options.NumShards)
+	logger.Infof("[Engine]IndexerBufferLength : %d.", options.IndexerBufferLength)
+	logger.Infof("[Engine]NumIndexerThreadsPerShard : %d.", options.NumIndexerThreadsPerShard)
+	logger.Infof("[Engine]RankerBufferLength : %d.", options.RankerBufferLength)
+	logger.Infof("[Engine]NumRankerThreadsPerShard : %d.", options.NumRankerThreadsPerShard)
+	logger.Infof("[Engine]IndexerInitOptions : user cache size = %d, search result max = %d.",
+		options.IndexerInitOptions.UserCacheSize, options.IndexerInitOptions.SearchResultMax)
+	logger.Infof("[Engine]DefaultRankOptions : %v.", options.DefaultRankOptions)
+	logger.Infof("[Engine]FlushIndexesPeriod : %v.", options.FlushIndexesPeriod)
 }
 
 // 初始化EngineInitOptions，当用户未设定某个选项的值时用默认值取代
@@ -87,4 +99,6 @@ func (options *EngineInitOptions) Init() {
 	if options.FlushIndexesPeriod == 0 {
 		options.FlushIndexesPeriod = defaultFlushIndexesPeriod
 	}
+
+	options.logEngineInitOptions()
 }

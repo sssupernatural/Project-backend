@@ -102,12 +102,9 @@ func (engine *Engine) Init(options types.EngineInitOptions) {
 	}
 
 	//启动周期强制刷新索引
-
 	flushTicker := time.NewTicker(engine.initOptions.FlushIndexesPeriod)
-	logger.Printf("Start period flush: period(%v).\n", engine.initOptions.FlushIndexesPeriod)
 	go func() {
 		for range flushTicker.C {
-			logger.Printf("Force flush, req num = %d.\n", engine.numIndexingRequests)
 			engine.FlushIndex()
 		}
 	}()
@@ -141,6 +138,11 @@ func (engine *Engine)ForceFlushIndexesPeriod() {
 //      2. 这个函数调用是非同步的，也就是说在函数返回时有可能用户还没有加入索引中，因此
 //         如果立刻调用Search可能无法查询到这个用户。强制刷新索引请调用FlushIndex函数。
 func (engine *Engine) IndexUser(userId uint32, data types.UserIndexData, forceUpdate bool) {
+	if userId == 0 && forceUpdate == true {
+		logger.Info("[Engine]Force update user index.")
+	} else {
+		logger.Infof("[Engine]Handle index user : ID(%d), force update(%v).", userId, forceUpdate)
+	}
 	engine.internalIndexUser(userId, data, forceUpdate)
 }
 
@@ -157,7 +159,12 @@ func (engine *Engine) internalIndexUser(
 		atomic.AddUint64(&engine.numForceUpdatingRequests, 1)
 	}
 
-	hash := murmur.Murmur3([]byte(fmt.Sprint("%d%v", userId, data)))
+	var hash uint32
+	if data.Info != nil {
+		hash = murmur.Murmur3([]byte(fmt.Sprint("%d%s", userId, data.Info.PhoneNumber)))
+	} else {
+		hash = murmur.Murmur3([]byte(fmt.Sprint("%d", userId)))
+	}
 	shard := engine.getShard(hash)
 
 	if userId != 0 {
@@ -169,6 +176,8 @@ func (engine *Engine) internalIndexUser(
 			},
 			forceUpdate: forceUpdate,
 		}
+
+		logger.Infof("[Engine]Send indexer add user req to indexer shard(%d), user id(%d).", shard, indexerRequest.user.ID)
 
 		engine.indexerAddUserChannels[shard] <- indexerRequest
 	}
@@ -184,6 +193,8 @@ func (engine *Engine) internalIndexUser(
 			userID: userId,
 			fields: data.GetScoringField(),
 		}
+
+		logger.Infof("[Engine]Send ranker add user req to ranker shard(%d), user id(%d).", shard, rankerRequest.userID)
 
 		engine.rankerAddUserChannels[shard] <- rankerRequest
 	}
@@ -226,11 +237,13 @@ func minInt(a, b int) int {
 	return b
 }
 
-// 查找满足搜索条件的文档，此函数线程安全
+// 查找满足搜索条件的用户，此函数线程安全
 func (engine *Engine) Search(request types.SearchRequest) (output types.SearchResponse) {
 	if !engine.initialized {
 		logger.Fatal("必须先初始化引擎")
 	}
+
+	logger.Info("[Engine]Handle search req.")
 
 	var rankOptions types.RankOptions
 	if request.RankOptions == nil {
@@ -248,11 +261,6 @@ func (engine *Engine) Search(request types.SearchRequest) (output types.SearchRe
 
 	locOwners := types.GenerateLocOwner(request.Locations)
 
-	logger.Printf("search req abis : %v.\n", request.AbiHeap)
-	logger.Printf("search req locs : %v.\n", locOwners)
-
-	logger.Infof("[Engine]Rank option : %v.", rankOptions)
-
 	// 生成查找请求
 	lookupRequest := indexerLookupRequest{
 		countDocsOnly:       request.CountDocsOnly,
@@ -264,6 +272,8 @@ func (engine *Engine) Search(request types.SearchRequest) (output types.SearchRe
 		orderless:           request.Orderless,
 		fields:              request.Fields,
 	}
+
+	logger.Info("[Enine]Send lookup req to all indexer.")
 
 	// 向索引器发送查找请求
 	for shard := 0; shard < engine.initOptions.NumShards; shard++ {
@@ -342,7 +352,6 @@ func (engine *Engine) Search(request types.SearchRequest) (output types.SearchRe
 
 // 阻塞等待直到所有索引添加完毕
 func (engine *Engine) FlushIndex() {
-	logger.Println("flush index!")
 	for {
 		runtime.Gosched()
 		if engine.numIndexingRequests == engine.numUsersIndexed &&

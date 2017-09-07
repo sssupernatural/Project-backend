@@ -121,20 +121,16 @@ func (indexer *Indexer) AddUserToCache(user *types.UserIndex, forceUpdate bool) 
 		logger.Fatal("索引器尚未初始化")
 	}
 
-	if user != nil {
-		logger.Printf("Add user to cache: %v!\n", *user)
-
-	}
-
 	indexer.addCacheLock.Lock()
 	//SWT : 将用户添加到"等待加入索引的用户缓存区"
 	if user != nil {
 		indexer.addCacheLock.addCache[indexer.addCacheLock.addCachePointer] = user
 		indexer.addCacheLock.addCachePointer++
+		logger.Infof("[Indexer]Add user to indexer cache succeed, user id(%d).", user.ID)
 	}
 	//缓存满或者强制更新时，将"等待加入索引的用户缓存区"中的用户添加到索引表中
 	if indexer.addCacheLock.addCachePointer >= indexer.initOptions.UserCacheSize || forceUpdate {
-		logger.Println("add User now!")
+		logger.Info("[Indexer]Start add cache users to index.")
 		indexer.tableLock.Lock()
 		position := 0
 		for i := 0; i < indexer.addCacheLock.addCachePointer; i++ {
@@ -175,9 +171,11 @@ func (indexer *Indexer) AddUserToCache(user *types.UserIndex, forceUpdate bool) 
 		indexer.addCacheLock.Unlock()
 		sort.Sort(addCachedUsers)
 		indexer.AddUsers(&addCachedUsers)
+		logger.Info("[Indexer]Add cache users to index finished.")
 	} else {
 		indexer.addCacheLock.Unlock()
 	}
+
 }
 
 // 向反向索引表中加入 ADDCACHE 中所有用户
@@ -186,9 +184,7 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 		logger.Fatal("索引器尚未初始化")
 	}
 
-	for index, tmpUser := range *users {
-		logger.Printf("Add user %d : %v.\n", index, tmpUser)
-	}
+	logger.Info("[Indexer]Add users to index.")
 
 	indexer.tableLock.Lock()
 	defer indexer.tableLock.Unlock()
@@ -197,7 +193,7 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 
 	// UserID 递增顺序遍历插入用户保证索引移动次数最少
 	for i, user := range *users {
-		logger.Printf("cur add user : %v.\n", user)
+		logger.Infof("[Indexer]Add user to index : user id(%d).", user.ID)
 		if i < len(*users)-1 && (*users)[i].ID == (*users)[i+1].ID {
 			// 如果有重复用户加入，因为稳定排序，只加入最后一个
 			continue
@@ -208,7 +204,6 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 			continue
 		}
 
-		logger.Println("add user real ")
 		userIdIsNew := true
 		for _, keyAbi := range user.KeyAbis {
 			indices, foundKeyAbi := indexer.tableLock.table[keyAbi.Abi]
@@ -255,6 +250,7 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 			indexer.numUsers++
 		}
 
+		/*
 		logger.Println("after add users abimap :")
 		for abimkey, abim := range indexer.tableLock.table {
 			logger.Printf("[%s|%v] - ", abimkey, *abim)
@@ -265,7 +261,10 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 			logger.Printf("[%v|%v] - ", locmkey, *locm)
 		}
 		logger.Println()
+		*/
 	}
+
+	logger.Info("[Indexer]Add users to index finished.")
 }
 
 // 向 REMOVECACHE 中加入一个待删除用户
@@ -283,11 +282,14 @@ func (indexer *Indexer) RemoveUserToCache(userID uint32, forceUpdate bool) bool 
 			indexer.removeCacheLock.removeCachePointer++
 			indexer.tableLock.usersState[userID] = 1
 			indexer.numUsers--
+			logger.Infof("[Indexer]Remove user from indexer cache succeed, user id(%d), user cache status(0->1).", userID)
 		} else if ok && userState == 2 {
 			// 删除一个等待加入的用户
 			indexer.tableLock.usersState[userID] = 1
+			logger.Infof("[Indexer]Remove user from indexer cache succeed, user id(%d), user cache status(2->1).", userID)
 		} else if !ok {
 			// 若用户不存在，则无法判断其是否在 addCache 中，需避免这样的操作
+			logger.Errorf("[Indexer]Remove user from indexer cache failed, user id(%d).", userID)
 		}
 		indexer.tableLock.Unlock()
 	}
@@ -314,6 +316,10 @@ func (indexer *Indexer) RemoveUsers(users *types.UsersID) {
 
 	indexer.tableLock.Lock()
 	defer indexer.tableLock.Unlock()
+
+	if users != nil {
+		logger.Info("[Indexer]Remove users from index, users id : %v.", users)
+	}
 
 	//删除用户状态
 	for _, userID := range *users {
@@ -375,6 +381,8 @@ func (indexer *Indexer) RemoveUsers(users *types.UsersID) {
 			delete(indexer.tableLock.locTable, keyLoc)
 		}
 	}
+
+	logger.Info("[Indexer]Remove users from index finished.")
 }
 
 func (indexer *Indexer)getLocationOwnersIDs(locationOwners []comm.Location) []uint32 {
@@ -396,27 +404,28 @@ func (indexer *Indexer) Lookup(
 		logger.Fatal("索引器尚未初始化")
 	}
 
-	/*
-	if indexer.numUsers == 0 {
-		return
-	}
-	*/
 	numUsers = 0
 
+	//根据索引表和能力堆构造能力索引堆
 	abisIndicesHeap := indexer.constructAbiIndicesHeap(abisHeap)
-	logger.Printf("constructed abi indices heap : %v\n", abisIndicesHeap)
+	logger.Infof("[Indexer]Construct abi indices heap : %v.", abisIndicesHeap)
 	if len(locationOwners) == 0 {
+		//过滤能力堆中的用户，规则是父能力节点不包含子能力节点的用户
+		logger.Infof("[Indexer]Filter abi indices heap IDs.")
 		abisIndicesHeap.FilterIDsByAbisIndices()
 	} else {
+		//过滤能力堆中的用户，规则是父能力节点不包含子能力节点的用户，且所有能力节点都只包含在归属坐标组中的用户
 		locationOwnersIds := indexer.getLocationOwnersIDs(locationOwners)
+		logger.Infof("[Indexer]Filter abi indices heap IDs with location owner IDs(%v).", locationOwnersIds)
 		abisIndicesHeap.FilterIDsByAbisIndicesAndLocationIndices(locationOwnersIds)
 	}
-	logger.Printf("filtered abi indices heap : %v\n", abisIndicesHeap)
+	logger.Infof("[Indexer]Filtered abi indices heap : %v", abisIndicesHeap)
 
+	//根据能力索引堆狗仔能力索引树
 	newAbiTree := abisIndicesHeap.ConstructAbiTree()
 
 	findUsers := newAbiTree.SearchIDs(indexer.initOptions.SearchResultMax)
-	logger.Printf("Tree find Users : %v\n", findUsers)
+	logger.Infof("[Indexer]Abis tree search find users : %v.", findUsers)
 
 	resultUsers := make([]types.IndexedUser, 0)
 	for _, id := range findUsers {

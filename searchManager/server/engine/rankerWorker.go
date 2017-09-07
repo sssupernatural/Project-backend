@@ -29,6 +29,7 @@ type rankerRemoveUserRequest struct {
 func (engine *Engine) rankerAddUserWorker(shard int) {
 	for {
 		request := <-engine.rankerAddUserChannels[shard]
+		logger.Infof("[Ranker]Handle ranker add user req: user id(%d).", request.userID)
 		engine.rankers[shard].AddUserRankField(request.userID, request.fields)
 	}
 }

@@ -2,7 +2,6 @@ package abiTree
 
 import (
 	"sort"
-	"fmt"
 )
 
 const DefaultMaxCacheResponsersNum = 50
@@ -46,13 +45,16 @@ type SplitPermutation struct {
 }
 
 func (h *AbiIndicesHeap)ConstructAbiTree() *AbiTree {
+	//查找能力堆的叶子能力节点（没有子能力的节点）
 	ends := h.constructAbiEnds()
 
 	abiTree := &AbiTree{
 		branches: make([]AbiBranch, 0),
 	}
 
+	//遍历叶子能力节点，构造能力树的各个能力枝
 	for i := len(ends) - 1; i >= 0; i-- {
+		//构造能力枝
 		newAbiBranch := AbiBranch{
 			nodes : make([]AbiBranchNode, 0),
 		}
@@ -64,6 +66,7 @@ func (h *AbiIndicesHeap)ConstructAbiTree() *AbiTree {
 		}
 		newAbiBranchNode.heapIndex = append(newAbiBranchNode.heapIndex, ends[i])
 		newAbiBranchNode.abiIndices = append(newAbiBranchNode.abiIndices, &h.AbiIndices[ends[i]])
+		//同父能力节点的叶子能力节点形成一个能力枝的末端枝节点
 		for j := i-1; j >= 0; j-- {
 			if h.AbiIndices[ends[j]].ParentIndex == h.AbiIndices[ends[i]].ParentIndex && h.AbiIndices[ends[j]].ParentIndex != 0 {
 				newAbiBranchNode.heapIndex = append(newAbiBranchNode.heapIndex, ends[j])
@@ -78,8 +81,10 @@ func (h *AbiIndicesHeap)ConstructAbiTree() *AbiTree {
 				break
 			}
 		}
+		//添加新能力枝的末端枝节点
 		newAbiBranch.nodes = append(newAbiBranch.nodes, newAbiBranchNode)
 		parentIndex := h.AbiIndices[ends[i]].ParentIndex
+		//末端枝节点向上遍历能力节点，形成能力枝
 		for parentIndex > 0 {
 			newAbiBranchNode := AbiBranchNode{
 				indicesNum: 1,
@@ -197,15 +202,21 @@ func (s branchEndIndicesSort) Len() int { return len(s) }
 func (s branchEndIndicesSort) Swap(i, j int){ s[i], s[j] = s[j], s[i] }
 func (s branchEndIndicesSort) Less(i, j int) bool { return s[i].endIndicesNum < s[j].endIndicesNum }
 
-
+//针对一个搜索模式的能力搜索的方法为：
+//能力枝的搜索枝节点由搜索模式决定，先对起始能力枝的搜索枝节点中的所有能力节点的用户求并集，再由该用户集与其他能力枝节点的各个能力节点的用户求交集
+//该搜索方法优先满足能力广度，即该方法优先返回能力项满足更多的用户
 func (t *AbiTree)searchIDsByLevelMode(mode []int) []uint32{
 	resultIDs := make([]uint32, 0)
+	//某个能力枝的高度达不到搜索级别时直接返回
 	for index, branch := range t.branches {
 		if len(branch.nodes) <= mode[index] {
 			return resultIDs
 		}
 	}
 
+	//以能力节点数量从小到大对能力枝的枝末端节点进行排序
+	//以搜索枝节点的能力节点数量少的能力枝开始搜索，可以先获得满足能力数量更多的用户
+	//虽然在能力评分中也会计算能力匹配分，但是在搜索用户数有限的情况下，该方法能优先返回更符合要求的用户
 	branchEndSort := make([]branchEndIndicesCounter, 0)
 	for index, branch := range t.branches {
 		branchEndSort = append(branchEndSort, branchEndIndicesCounter{
@@ -214,40 +225,47 @@ func (t *AbiTree)searchIDsByLevelMode(mode []int) []uint32{
 		})
 	}
 	sort.Sort(branchEndIndicesSort(branchEndSort))
-	fmt.Printf("branch sort:%v\n", branchEndSort)
+	logger.Infof("[AbiTree][ModeSearch] : Branch end sort result : %v.", branchEndSort)
 
 	idExistMap := make(map[uint32]bool)
 	for i := 0; i < len(t.branches); i++ {
 		searchIDs := make([]uint32, 0)
+		//获得起始能力枝的编号
 		startBranchIndex := branchEndSort[i].branchIndex
 
+		//起始能力枝的搜索枝节点的各个能力节点用户求并集
 		for _, indices := range t.branches[startBranchIndex].nodes[mode[startBranchIndex]].abiIndices {
 			if indices.IDs != nil && len(indices.IDs) != 0 {
 				searchIDs = append(searchIDs, indices.IDs...)
 			}
 		}
-
+		//对源用户集排序
 		sort.Sort(uint32Slice(searchIDs))
 		searchIDs = uint32Slice(searchIDs).RemoveDuplicate()
 
-		fmt.Printf("\nsrcIDs : %v | ", searchIDs)
+		logger.Infof("[AbiTree][ModeSearch][%d] : start branch index(%d), source IDs(%v).", i, startBranchIndex, searchIDs)
 
+		//遍历其他能力枝求用户交集
 		for branchIndex, m := range mode {
 			if branchIndex == startBranchIndex {
 				continue
 			}
 
+			//遍历其他能力枝的搜索直接点的能力节点求用户交集
 			for _, indices := range t.branches[branchIndex].nodes[m].abiIndices {
-				fmt.Printf("compIDs : %v | ", indices.IDs)
+				logger.Infof("[AbiTree][ModeSearch][%d] : compare IDs(%v).", i, indices.IDs)
 				if indices.IDs == nil || len(indices.IDs) == 0 {
 					searchIDs = searchIDs[0:0]
 				} else {
 					searchIDs = saveSortedDuplicateIds(searchIDs, indices.IDs)
 				}
-				fmt.Printf("srcIDs : %v | ", searchIDs)
+				logger.Infof("[AbiTree][ModeSearch][%d] : source IDs(%v).", i, searchIDs)
 			}
+
+			logger.Infof("[AbiTree][ModeSearch][%d] : result IDs(%v).", i, searchIDs)
 		}
 
+		//将搜索到的用户加入搜索结果
 		for _, id := range searchIDs {
 			_, ok := idExistMap[id]
 			if !ok {
@@ -272,17 +290,26 @@ func (t *AbiTree)getBranchesHeightSum() int {
 func (t *AbiTree)SearchIDs(requiredIDsNum int) []uint32 {
 	curIDsNum := 0
 	resultIDs := make([]uint32, 0)
+	logger.Info("[AbiTree]Start search.")
+	//计算能力树的能力枝的总高度（各个能力枝的枝节点数量总和）
 	branchesHeightSum := t.getBranchesHeightSum()
+	logger.Infof("[AbiTree]Branches height sum : %d.", branchesHeightSum)
+	//从0向上提高搜索级别，级别越低，搜索到的用户能力匹配越高
+	// 一个搜索级别代表能力树中某一个能力枝在搜索时的用户来自该能力枝的枝末端节点向上提高一个能力枝节点。搜索级别不高于能力枝总高度，
 	for level := 0; level < branchesHeightSum; level++ {
+		logger.Infof("[AbiTree]Search level : %d.", level)
+		//将搜索级别拆分按能力枝的数量进行拆分
 		abiLevel := &AbiLevel{
 			splitNum: len(t.branches),
 			result: make([]int, len(t.branches)+1),
 			SplitResults: make([][]int, 0),
 		}
-
-		fmt.Printf("split level : %d\n", level)
 		abiLevel.splitLevel(level, 1)
+
+		//遍历搜索级别的拆分结果
 		for _, split := range abiLevel.SplitResults {
+			logger.Infof("[AbiTree]Search level split : %v.", split)
+			//获取该拆分结果的全排列
 			sp := &SplitPermutation{
 				split: split,
 				result: make([][]int, 0),
@@ -290,10 +317,12 @@ func (t *AbiTree)SearchIDs(requiredIDsNum int) []uint32 {
 			}
 			sp.perm(0, len(sp.split))
 
+			//遍历该拆分结果的全排列
 			for _, perm := range sp.result {
-				fmt.Printf("perm : %v | ", perm)
+				logger.Infof("[AbiTree]Search split perm : %v.", perm)
+				//对一个能力级别的一个拆分结果的一个排列进行能力搜索
 				modeResult := t.searchIDsByLevelMode(perm)
-				fmt.Printf("modeResult : %v\n", modeResult)
+				logger.Infof("[AbiTree]Search split perm result IDs : %v.", modeResult)
 				if len(modeResult) + curIDsNum >= requiredIDsNum {
 					resultIDs = append(resultIDs, modeResult[:requiredIDsNum-curIDsNum]...)
 					return resultIDs

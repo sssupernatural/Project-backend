@@ -60,6 +60,8 @@ func (ranker *Ranker) AddUserRankField(userID uint32, fields interface{}) {
 	ranker.lock.fields[userID] = fields
 	ranker.lock.users[userID] = true
 	ranker.lock.Unlock()
+
+	logger.Infof("[Ranker]Add user to ranker succeed, user id(%d).", userID)
 }
 
 // 删除某个用户的评分字段

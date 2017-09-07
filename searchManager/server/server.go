@@ -26,10 +26,11 @@ func New(conf *SMServerConfig) *SMServer {
 	dc := dataClient.New(&conf.DataCenterConf)
 	dc.InitTasksData()
 
+	logger.Infof("[Server]Initialize Data Center Client succeed.")
+
 
 	gob.Register(st.SMScoringField{})
 	newSearcher := &se.Engine{}
-	logger.Println("Init Search Engine Success!")
 
 	var newSearchInitOptions st.EngineInitOptions
 	newSearchInitOptions.NumShards = 1
@@ -41,8 +42,8 @@ func New(conf *SMServerConfig) *SMServer {
 		ScoringCriteria: &st.RankByInfo{},
 		MaxOutputs: 10,
 	}
-	newSearchInitOptions.Init()
 	newSearcher.Init(newSearchInitOptions)
+	logger.Infof("[Server]Initialize Search Engine succeed.")
 
 	return &SMServer{
 		addr: conf.Addr,
@@ -65,7 +66,8 @@ func generateSearchResponsersResp(errCode int32, ti *comm.TaskInfo) *smrpc.Searc
 }
 
 func (s *SMServer)SearchResponsers(ctx context.Context, srReq *smrpc.SearchResponsersReq) (*smrpc.SearchResponsersResp, error) {
-	logger.Println("Receive a Search Req.")
+	logger.Info("[Server]Receive search request.")
+	logger.Infof("[Server]Search request info : task id(%d), requester user id(%d).", srReq.Task.ID, srReq.Task.Requester)
 	ti := srReq.Task
 	ti.Responsers = make([]uint32, 0)
 
@@ -83,11 +85,6 @@ func (s *SMServer)SearchResponsers(ctx context.Context, srReq *smrpc.SearchRespo
 		Fields: sf,
 	}
 
-	if sr.RankOptions == nil {
-		logger.Info("[Server]Rank option is nil.")
-	} else {
-		logger.Infof("[Server]Rank option : %v.", sr.RankOptions)
-	}
 	sresp := s.Searcher.Search(sr)
 	for _, r := range sresp.Users {
 		ti.Responsers = append(ti.Responsers, uint32(r.ID))
@@ -101,7 +98,13 @@ func (s *SMServer)SearchResponsers(ctx context.Context, srReq *smrpc.SearchRespo
 }
 
 func (s *SMServer)InsertUserRecords(ctx context.Context, irReq *smrpc.InsertUserRecordsReq) (*smrpc.InsertUserRecordsResp, error) {
-	logger.Printf("Receive a Insert Users Req, user number : %d.\n",irReq.UserRecordNum)
+	logger.Info("[Server]Receive insert request.")
+	logger.Infof("[Server]Insert users num : %d.", irReq.UserRecordNum)
+	for _, logU := range irReq.Users {
+		logger.Infof("[Server]Insert User : ID(%d), status(%s), sex(%s), age(%d).",
+			logU.ID, comm.DescStatus(logU.Status), comm.DescSex(logU.Sex), logU.Age)
+	}
+
 	if irReq.UserRecordNum == 0 {
 		resp := &smrpc.InsertUserRecordsResp{
 			Comm: &smrpc.SearchManagerRespComm{
@@ -118,8 +121,6 @@ func (s *SMServer)InsertUserRecords(ctx context.Context, irReq *smrpc.InsertUser
 			Info: ui,
 		}
 
-		logger.Printf("interface index user : id(%d), user(%v).\n", ui.ID, *curRecord.Info)
-
 		go s.Searcher.IndexUser(ui.ID, curRecord, false)
 	}
 
@@ -129,9 +130,6 @@ func (s *SMServer)InsertUserRecords(ctx context.Context, irReq *smrpc.InsertUser
 			ErrorMsg: comm.GetErrMsg(comm.RetOK),
 		},
 	}
-	//s.Searcher.FlushIndex()
-
-	logger.Printf("Handle Insert Users Req Succeed, user number : %d.\n",irReq.UserRecordNum)
 
 	return resp, nil
 
