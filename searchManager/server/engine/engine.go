@@ -102,16 +102,15 @@ func (engine *Engine) Init(options types.EngineInitOptions) {
 	}
 
 	//启动周期强制刷新索引
-	/*
+
 	flushTicker := time.NewTicker(engine.initOptions.FlushIndexesPeriod)
 	logger.Printf("Start period flush: period(%v).\n", engine.initOptions.FlushIndexesPeriod)
 	go func() {
-		for _ = range flushTicker.C {
+		for range flushTicker.C {
 			logger.Printf("Force flush, req num = %d.\n", engine.numIndexingRequests)
 			engine.FlushIndex()
 		}
 	}()
-	*/
 
 	return
 }
@@ -176,9 +175,6 @@ func (engine *Engine) internalIndexUser(
 
 	if forceUpdate {
 		for i := 0; i < engine.initOptions.NumShards; i++ {
-			if i == shard {
-				continue
-			}
 			engine.indexerAddUserChannels[i] <- indexerAddUserRequest{forceUpdate: true}
 		}
 	}

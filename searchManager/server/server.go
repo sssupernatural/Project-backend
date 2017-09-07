@@ -34,7 +34,7 @@ func New(conf *SMServerConfig) *SMServer {
 	var newSearchInitOptions st.EngineInitOptions
 	newSearchInitOptions.NumShards = 1
 	newSearchInitOptions.IndexerInitOptions = &st.IndexerInitOptions{
-		UserCacheSize: 1,
+		UserCacheSize: 10,
 		SearchResultMax: 10,
 	}
 	newSearchInitOptions.DefaultRankOptions = &st.RankOptions{
@@ -129,7 +129,7 @@ func (s *SMServer)InsertUserRecords(ctx context.Context, irReq *smrpc.InsertUser
 			ErrorMsg: comm.GetErrMsg(comm.RetOK),
 		},
 	}
-	s.Searcher.FlushIndex()
+	//s.Searcher.FlushIndex()
 
 	logger.Printf("Handle Insert Users Req Succeed, user number : %d.\n",irReq.UserRecordNum)
 

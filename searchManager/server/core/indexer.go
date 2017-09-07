@@ -121,7 +121,10 @@ func (indexer *Indexer) AddUserToCache(user *types.UserIndex, forceUpdate bool) 
 		logger.Fatal("索引器尚未初始化")
 	}
 
-	logger.Printf("Add user to cache: %v!\n", *user)
+	if user != nil {
+		logger.Printf("Add user to cache: %v!\n", *user)
+
+	}
 
 	indexer.addCacheLock.Lock()
 	//SWT : 将用户添加到"等待加入索引的用户缓存区"
