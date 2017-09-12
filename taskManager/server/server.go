@@ -152,31 +152,35 @@ func (s *TMServer)QueryUserTasks(ctx context.Context, ctReq *tmrpc.QueryUserTask
 			ID: ti.ID,
 			Status: ti.Status,
 			Desc: ti.Desc,
+			FulfilStatus: ti.FulfilStatus,
 			Responsers: make([]*comm.UserInfo, 0),
+			ChosenResponser: make([]*comm.UserInfo, 0),
 		}
 
 		requester, err := s.usersDataClient.GetUserInfoByID(ti.Requester)
 		if err != nil {
-			logger.Errorf("[DataCenter][Query User tasks]Get User Info from datacenter failed, err:%s, user_id:%d, taskid:%d.",
+			logger.Errorf("[DataCenter][Query User tasks]Get User Info from dataCenter failed, err:%s, user_id:%d, taskid:%d.",
 				err, ti.Requester, ti.ID)
 		} else {
 			tiwu.Requester = requester
 		}
 
 		if ti.Status == comm.TaskStatusProcessing || ti.Status == comm.TaskStatusFulfilled {
-			chosenResponser, err := s.usersDataClient.GetUserInfoByID(ti.ChosenResponser)
-			if err != nil {
-				logger.Errorf("[DataCenter][Query User tasks]Get User Info from datacenter failed, err:%s, user_id:%d, taskid:%d.",
-					err, ti.ChosenResponser, ti.ID)
-			} else {
-				tiwu.ChosenResponser = chosenResponser
+			for _, cr := range ti.ChosenResponser {
+				chosenResponser, err := s.usersDataClient.GetUserInfoByID(cr)
+				if err != nil {
+					logger.Errorf("[DataCenter][Query User tasks]Get User Info from dataCenter failed, err:%s, user_id:%d, taskid:%d.",
+						err, cr, ti.ID)
+				} else {
+					tiwu.ChosenResponser = append(tiwu.ChosenResponser, chosenResponser)
+				}
 			}
 		}
 
 		for _, r := range ti.Responsers {
 			responser, err := s.usersDataClient.GetUserInfoByID(r)
 			if err != nil {
-				logger.Errorf("[DataCenter][Query User tasks]Get User Info from datacenter failed, err:%s, user_id:%d, taskid:%d.",
+				logger.Errorf("[DataCenter][Query User tasks]Get User Info from dataCenter failed, err:%s, user_id:%d, taskid:%d.",
 					err, r, ti.ID)
 			} else {
 				tiwu.Responsers = append(tiwu.Responsers, responser)
@@ -199,7 +203,7 @@ func (s *TMServer)AcceptTask(ctx context.Context, atReq *tmrpc.AcceptTaskReq) (*
 
 	s.tasksLock.Lock()
 
-	if atReq.Decision == comm.TaskDesionAccept {
+	if atReq.Decision == comm.TaskDecisionAccept {
 
 		ti, ok := s.tasks[atReq.TaskID]
 		if ok == false {
@@ -257,14 +261,18 @@ func (s *TMServer)ChooseTaskResponser(ctx context.Context, ctrReq *tmrpc.ChooseT
 	s.tasksLock.Lock()
 
 	ti := s.tasks[ctrReq.TaskID]
-	ti.ChosenResponser = ctrReq.ChoseResponserID
+	ti.ChosenResponser = ctrReq.ChoseResponsersIDs
 	ti.Status = comm.TaskStatusProcessing
+	ti.FulfilStatus = make([]int32, len(ti.ChosenResponser))
+	for i := 0; i < len(ti.FulfilStatus); i++ {
+		ti.FulfilStatus[i] = comm.TaskFulfilStatusDoing
+	}
 
 	err := s.tasksDataClient.UpdateTaskInfo(ti)
 	if err != nil {
 		logger.Errorf("[DataCenter][Choose Task Responser]Update task info failed. err: %s, req: %v.", err, ctrReq)
 		ti = s.tasks[ctrReq.TaskID]
-		ti.ChosenResponser = 0
+		ti.ChosenResponser = nil
 		ti.Status = comm.TaskStatusWaitingChoose
 
 		resp = &tmrpc.ChooseTaskResponserResp{
@@ -272,14 +280,24 @@ func (s *TMServer)ChooseTaskResponser(ctx context.Context, ctrReq *tmrpc.ChooseT
 		}
 	} else {
 		ti = s.tasks[ctrReq.TaskID]
+		findTag := false
 		for _, r := range ti.Responsers {
-			if r != ctrReq.ChoseResponserID {
+			for _, cr := range ti.ChosenResponser {
+				if r == cr {
+					findTag = true
+					break
+				}
+			}
+
+			if !findTag {
 				for index, t := range s.userTasks[r] {
 					if t.ID == ctrReq.TaskID {
 						s.userTasks[r] = append(s.userTasks[r][:index], s.userTasks[r][index+1:]...)
 					}
 				}
 			}
+
+			findTag = false
 		}
 
 		resp = &tmrpc.ChooseTaskResponserResp{
@@ -298,7 +316,23 @@ func (s *TMServer)FulfilTask(ctx context.Context, ftReq *tmrpc.FulfilTaskReq) (*
 	s.tasksLock.Lock()
 
 	ti := s.tasks[ftReq.TaskID]
-	ti.Status = comm.TaskStatusFulfilled
+	for index, cr := range ti.ChosenResponser {
+		if cr == ftReq.ResponserID {
+			ti.FulfilStatus[index] = comm.TaskFulfilStatusFinished
+		}
+	}
+
+	taskFinishTag := true
+	for _, s := range ti.FulfilStatus {
+		if s != comm.TaskFulfilStatusFinished {
+			taskFinishTag = false
+			break
+		}
+	}
+
+	if taskFinishTag {
+		ti.Status = comm.TaskStatusFulfilled
+	}
 
 	err := s.tasksDataClient.UpdateTaskInfo(ti)
 	if err != nil {
@@ -333,11 +367,13 @@ func (s *TMServer)EvaluateAndFinishTask(ctx context.Context, etReq *tmrpc.Evalua
 		}
 	}
 
-	for index, cti := range s.userTasks[ti.ChosenResponser] {
-		if cti.ID == etReq.TaskID {
-			s.userTasks[ti.ChosenResponser] = append(s.userTasks[ti.ChosenResponser][:index], s.userTasks[ti.ChosenResponser][index+1:]...)
-			if len(s.userTasks[ti.ChosenResponser]) == 0 {
-				delete(s.userTasks, ti.ChosenResponser)
+	for _, cr := range ti.ChosenResponser {
+		for index, cti := range s.userTasks[cr] {
+			if cti.ID == etReq.TaskID {
+				s.userTasks[cr] = append(s.userTasks[cr][:index], s.userTasks[cr][index+1:]...)
+				if len(s.userTasks[cr]) == 0 {
+					delete(s.userTasks, cr)
+				}
 			}
 		}
 	}

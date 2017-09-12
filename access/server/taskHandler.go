@@ -159,7 +159,7 @@ func handleTaskActionAccept(w http.ResponseWriter, a *comm.TaskAction) error {
 func handleTaskActionChoose(w http.ResponseWriter, a *comm.TaskAction) error {
 	chooseResponserReq := &tmrpc.ChooseTaskResponserReq {
 		TaskID: a.TaskID,
-		ChoseResponserID: a.UserID,
+		ChoseResponsersIDs: a.ChosenResponserIDs,
 	}
 
 	tmClient := TMCG.GetClient()

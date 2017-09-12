@@ -274,7 +274,7 @@ func (engine *Engine) Search(request types.SearchRequest) (output types.SearchRe
 	}
 
 	logger.Info("[Engine]Send lookup req to all indexer.")
-	
+
 	// 向索引器发送查找请求
 	for shard := 0; shard < engine.initOptions.NumShards; shard++ {
 		engine.indexerLookupChannels[shard] <- lookupRequest

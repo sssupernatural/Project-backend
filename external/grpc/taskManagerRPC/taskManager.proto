@@ -17,8 +17,8 @@ message AcceptTaskReq {
 }
 
 message ChooseTaskResponserReq {
-    uint64 taskID           = 1;
-    uint32 choseResponserID = 2;
+    uint64          taskID             = 1;
+    repeated uint32 choseResponsersIDs = 2;
 }
 
 message FulfilTaskReq {

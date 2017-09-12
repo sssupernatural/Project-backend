@@ -25,13 +25,20 @@ func printTaskInfo(t *comm.TaskInfoWithUsers) {
 	fmt.Println("| 任务请求者信息 :")
 	printUserInfo(t.Requester)
 	fmt.Println("| 任务响应者信息 :")
-	if t.ChosenResponser == nil {
+	if t.ChosenResponser == nil || len(t.ChosenResponser) == 0{
 		fmt.Println("| |任务还没有被选择的响应者")
 	} else {
-		printUserInfo(t.ChosenResponser)
+		for index, r := range t.ChosenResponser {
+			if t.FulfilStatus[index] == comm.TaskFulfilStatusDoing {
+				fmt.Println("| |正在进行任务的响应者 : ")
+			} else if t.FulfilStatus[index] == comm.TaskFulfilStatusFinished {
+				fmt.Println("| |已经完成任务的响应者 : ")
+			}
+			printUserInfo(r)
+		}
 	}
 	fmt.Println("| 任务备选响应者信息 :")
-	if len(t.Responsers) == 0 {
+	if t.Responsers == nil || len(t.Responsers) == 0 {
 		fmt.Println("| |任务还没有备选响应者")
 	} else {
 		for _, r := range t.Responsers {
@@ -268,11 +275,24 @@ func (u *User)QueryTask() {
 	for _, t := range tis {
 		if t.Requester.ID == u.ID {
 			fmt.Println("你创建的任务：")
-		} else if t.ChosenResponser != nil && t.ChosenResponser.ID == u.ID {
-			fmt.Println("你作为响应者的任务: ")
 		} else {
-			fmt.Println("你作为备选响应者的任务: ")
+			if t.ChosenResponser != nil && len(t.ChosenResponser) != 0 {
+				crTag := false
+				for _, cr := range t.ChosenResponser {
+					if cr.ID == u.ID {
+						crTag = true
+						break
+					}
+				}
+
+				if crTag {
+					fmt.Println("你作为响应者的任务: ")
+				} else {
+					fmt.Println("你作为备选响应者的任务: ")
+				}
+			}
 		}
+
 		printTaskInfo(t)
 	}
 	fmt.Println()
@@ -305,9 +325,9 @@ func (u *User)AcceptTask() {
 	fmt.Printf("请输入你对任务的选择的编号 ：1-[接受] | 2-[拒绝] ：")
 	fmt.Scanf("%d", &decision)
 	if decision == 1 {
-		curTaskAction.Decision = comm.TaskDesionAccept
+		curTaskAction.Decision = comm.TaskDecisionAccept
 	} else {
-		curTaskAction.Decision = comm.TaskDesionRefuse
+		curTaskAction.Decision = comm.TaskDecisionRefuse
 	}
 
 	err := u.CheckAcceptTask(&curTaskAction)
@@ -357,17 +377,32 @@ func (u *User)AcceptTask() {
 }
 
 func (u *User)CheckChooseResponser(a *comm.TaskAction) error {
+	findTaskTag := false
 	for _, ti := range u.TIs {
 		if ti.ID == a.TaskID {
-			for _, r := range ti.Responsers {
-				if r.ID == a.UserID {
-					return nil
+			findTaskTag = true
+			findTag := false
+			for _, cr := range a.ChosenResponserIDs {
+				for _, r := range ti.Responsers {
+					if cr == r.ID {
+						findTag = true
+						break
+					}
+				}
+				if !findTag {
+					return errors.New("你选择的响应者不在备选响应者中")
+				} else {
+					findTag = false
 				}
 			}
 		}
 	}
 
-	return errors.New("输入了错误的任务编号或者响应者编号")
+	if !findTaskTag {
+		errors.New("输入了错误的任务编号")
+	}
+
+	return nil
 }
 
 func (u *User)ChooseResponser() {
@@ -378,11 +413,23 @@ func (u *User)ChooseResponser() {
 
 	var curTaskAction comm.TaskAction
 
+	curTaskAction.ChosenResponserIDs = make([]uint32, 0)
+
 	curTaskAction.Action = "CHOOSE"
 	fmt.Printf("请输入要选择响应者的任务编号 : ")
 	fmt.Scanf("%d", &curTaskAction.TaskID)
-	fmt.Printf("请输入要选择的响应者编号 : ")
-	fmt.Scanf("%d", &curTaskAction.UserID)
+
+	var tmpUID uint32 = 0
+	for {
+		fmt.Printf("请输入要选择的响应者编号(结束请输入0) : ")
+		fmt.Scanf("%d", &tmpUID)
+		if tmpUID == 0 {
+			break
+		} else {
+			newResponserUID := tmpUID
+			curTaskAction.ChosenResponserIDs = append(curTaskAction.ChosenResponserIDs, newResponserUID)
+		}
+	}
 
 	err := u.CheckChooseResponser(&curTaskAction)
 	if err != nil {
@@ -433,8 +480,10 @@ func (u *User)ChooseResponser() {
 func (u *User)CheckFulfilTask(a *comm.TaskAction) error {
 	for _, ti := range u.TIs {
 		if ti.ID == a.TaskID {
-			if ti.ChosenResponser.ID == a.UserID {
-				return nil
+			for _, cr := range ti.ChosenResponser {
+				if cr.ID == a.UserID {
+					return nil
+				}
 			}
 		}
 	}

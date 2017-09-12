@@ -15,8 +15,12 @@ const (
 	TaskStatusFulfilled     int32  = 11004
 	TasKStatusSearchResponserFailed = 11005
 
-	TaskDesionAccept int32 = 12001
-	TaskDesionRefuse int32 = 12002
+	TaskDecisionAccept int32 = 12001
+	TaskDecisionRefuse int32 = 12002
+
+	TaskFulfilStatusFinished int32 = 13001
+	TaskFulfilStatusDoing    int32 = 13002
+
 )
 
 const 	(
@@ -35,6 +39,9 @@ const 	(
 	MsgTaskStatusFulfilled     string  = "已完成"
 	MsgTaskStatusUnknown       string  = "异常"
 	MsgTasKStatusSearchResponserFailed string = "搜索备选响应者失败"
+
+	MsgTaskFulfilStatusFinished string = "任务已完成"
+	MsgTaskFulfilStatusDoing    string = "任务进行中"
 
 )
 
@@ -64,6 +71,14 @@ func DescSex(sex int32) string {
 	default: return MsgUserSexUnknown
 	case UserSexMale : return MsgUserSexMale
 	case UserSexFemale: return MsgUserSexFemale
+	}
+}
+
+func DescFulfilStatus(fulfilStatus int32) string {
+	switch fulfilStatus {
+	default: return MsgTaskFulfilStatusDoing
+	case TaskFulfilStatusFinished : return MsgTaskFulfilStatusFinished
+	case TaskFulfilStatusDoing: return MsgTaskFulfilStatusDoing
 	}
 }
 

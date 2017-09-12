@@ -43,6 +43,7 @@ message TaskAction {
     uint64 TaskID   = 2;
     uint32 UserID   = 3;
     int32  Decision = 4;
+    repeated uint32 ChosenResponserIDs = 5;
 }
 
 message TaskCreateInfo {
@@ -56,19 +57,21 @@ message TaskCreateInfo {
 }
 
 message TaskInfo {
-    uint64 ID                  = 1;
-    int32  Status              = 2;
-    TaskCreateInfo Desc        = 3;
-    uint32 Requester           = 4;
-    uint32 ChosenResponser     = 5;
-    repeated uint32 Responsers = 6;
+    uint64 ID                       = 1;
+    int32  Status                   = 2;
+    TaskCreateInfo Desc             = 3;
+    uint32 Requester                = 4;
+    repeated uint32 ChosenResponser = 5;
+    repeated int32  FulfilStatus    = 6;
+    repeated uint32 Responsers      = 7;
 }
 
 message TaskInfoWithUsers {
-    uint64 ID                    = 1;
-    int32  Status                = 2;
-    TaskCreateInfo Desc          = 3;
-    UserInfo Requester           = 4;
-    UserInfo ChosenResponser     = 5;
-    repeated UserInfo Responsers = 6;
+    uint64 ID                         = 1;
+    int32  Status                     = 2;
+    TaskCreateInfo Desc               = 3;
+    UserInfo Requester                = 4;
+    repeated UserInfo ChosenResponser = 5;
+    repeated int32  FulfilStatus      = 6;
+    repeated UserInfo Responsers      = 7;
 }
