@@ -59,8 +59,13 @@ func RegisterUser(u *User) {
 	fmt.Scanf("%s", &curUserAction.CheckInfo.Name)
 	fmt.Print("请输入注册手机号：")
 	fmt.Scanf("%s", &curUserAction.CheckInfo.PhoneNumber)
-	fmt.Print("请输入该用户密码：")
-	fmt.Scanf("%s", &curUserAction.CheckInfo.Password)
+	for i := 0; len(curUserAction.CheckInfo.Password) < 6 ; i++ {
+		if i != 0 {
+			fmt.Println("密码至少为6位(数字或者字母)，请重新设置")
+		}
+		fmt.Print("请输入该用户密码：")
+		fmt.Scanf("%s", &curUserAction.CheckInfo.Password)
+	}
 	fmt.Println("注册中...")
 
 	curUserAction.Action = "REGISTER"
@@ -262,8 +267,10 @@ func printUserInfo(u *comm.UserInfo) {
 
 	if u.Abilities != nil {
 		fmt.Print("| | 能力 : ")
-		for _, abi := range u.Abilities.ABIs {
-			fmt.Printf("[%s(%d级)] | ", abi.ABI, getAbiLevel(abi.Experience))
+		for index, abi := range u.Abilities.ABIs {
+			if index != 0 {
+				fmt.Printf("[%s(%d级)] | ", abi.ABI, getAbiLevel(abi.Experience))
+			}
 		}
 		fmt.Println()
 	}

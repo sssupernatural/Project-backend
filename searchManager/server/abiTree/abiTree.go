@@ -215,7 +215,7 @@ func (t *AbiTree)searchIDsByLevelMode(mode []int) []uint32{
 	}
 
 	//以能力节点数量从小到大对能力枝的枝末端节点进行排序
-	//以搜索枝节点的能力节点数量少的能力枝开始搜索，可以先获得满足能力数量更多的用户
+	//从搜索枝节点的能力节点数量更少的能力枝开始搜索，可以优先获得满足能力数量更多的用户
 	//虽然在能力评分中也会计算能力匹配分，但是在搜索用户数有限的情况下，该方法能优先返回更符合要求的用户
 	branchEndSort := make([]branchEndIndicesCounter, 0)
 	for index, branch := range t.branches {
@@ -251,7 +251,7 @@ func (t *AbiTree)searchIDsByLevelMode(mode []int) []uint32{
 				continue
 			}
 
-			//遍历其他能力枝的搜索直接点的能力节点求用户交集
+			//遍历其他能力枝的搜索枝节点的能力节点求用户交集
 			for _, indices := range t.branches[branchIndex].nodes[m].abiIndices {
 				logger.Infof("[AbiTree][ModeSearch][%d] : compare IDs(%v).", i, indices.IDs)
 				if indices.IDs == nil || len(indices.IDs) == 0 {
@@ -291,14 +291,14 @@ func (t *AbiTree)SearchIDs(requiredIDsNum int) []uint32 {
 	curIDsNum := 0
 	resultIDs := make([]uint32, 0)
 	logger.Info("[AbiTree]Start search.")
-	//计算能力树的能力枝的总高度（各个能力枝的枝节点数量总和）
+	//计算能力树上的能力枝的总高度（各个能力枝的枝节点数量总和）
 	branchesHeightSum := t.getBranchesHeightSum()
 	logger.Infof("[AbiTree]Branches height sum : %d.", branchesHeightSum)
 	//从0向上提高搜索级别，级别越低，搜索到的用户能力匹配越高
 	// 一个搜索级别代表能力树中某一个能力枝在搜索时的用户来自该能力枝的枝末端节点向上提高一个能力枝节点。搜索级别不高于能力枝总高度，
 	for level := 0; level < branchesHeightSum; level++ {
 		logger.Infof("[AbiTree]Search level : %d.", level)
-		//将搜索级别拆分按能力枝的数量进行拆分
+		//将搜索级别按能力枝的数量进行拆分
 		abiLevel := &AbiLevel{
 			splitNum: len(t.branches),
 			result: make([]int, len(t.branches)+1),

@@ -421,7 +421,7 @@ func (indexer *Indexer) Lookup(
 	}
 	logger.Infof("[Indexer]Filtered abi indices heap : %v", abisIndicesHeap)
 
-	//根据能力索引堆狗仔能力索引树
+	//根据能力索引堆构建能力索引树
 	newAbiTree := abisIndicesHeap.ConstructAbiTree()
 
 	findUsers := newAbiTree.SearchIDs(indexer.initOptions.SearchResultMax)
