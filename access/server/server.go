@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"net/http"
 	"access/rpc"
+	umrpc "external/grpc/userManagerRPC"
+	tmrpc "external/grpc/taskManagerRPC"
 )
 
-var UMCG *rpc.AccessUMClientGroup
-var TMCG *rpc.AccessTMClientGroup
-
 type AccessServer struct {
+	umClient umrpc.UserManagerClient
+	tmClient tmrpc.TaskManagerClient
+
 	Addr        string
 	UMAddr      string
-	UMClientNum int
 	TMAddr      string
-	TMClientNum int
 }
 
 func New() (s *AccessServer) {
@@ -23,26 +23,20 @@ func New() (s *AccessServer) {
 }
 
 func (s *AccessServer)Serve() error {
-
-	UMCG = rpc.NewUMClientGroup(s.UMAddr, s.UMClientNum)
-
-	err := rpc.StartAccessUMClientGroup(UMCG)
+	var err error
+	s.umClient, err = rpc.InitUserManagerClient(s.UMAddr)
 	if err != nil {
-		fmt.Printf("Init Access Server UMCG failed! Error : %s\n", err)
 		return err
 	}
 
-	TMCG = rpc.NewTMClientGroup(s.TMAddr, s.TMClientNum)
-
-	err = rpc.StartAccessTMClientGroup(TMCG)
+	s.tmClient, err = rpc.InitTaskManagerClient(s.TMAddr)
 	if err != nil {
-		fmt.Printf("Init Access Server TMCG failed! Error : %s\n", err)
 		return err
 	}
 
-	http.HandleFunc("/users", usersHandler)
-	http.HandleFunc("/userinfo", userInfoHandler)
-	http.HandleFunc("/tasks", tasksHandler)
+	http.HandleFunc("/users", s.usersHandler)
+	http.HandleFunc("/userinfo", s.userInfoHandler)
+	http.HandleFunc("/tasks", s.tasksHandler)
 
 	err = http.ListenAndServe(s.Addr, nil)
 	if err != nil {

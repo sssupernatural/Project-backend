@@ -46,12 +46,13 @@ func (rule RankByInfo) Score(user IndexedUser, fields interface{}, requestFields
 		return nil
 	}
 
-	/*
-	logger.Printf("f.status : %s\n", comm.DescStatus(f.Status))
+
+	/*logger.Printf("f.status : %s\n", comm.DescStatus(f.Status))
 	if f.Status == comm.UserStatusOffline {
 		return nil
 	}
 	*/
+
 
 	score := make([]float32, 0)
 	scoreAbi := 0

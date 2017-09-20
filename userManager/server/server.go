@@ -11,15 +11,15 @@ import (
 
 type UMServerConfig struct {
 	Addr           string
+	SMAddr         string
     DataCenterConf dataClient.DataCenterDesc
 }
 
 type UMServer struct {
 	addr string
 	dataClient *dataClient.DataCenterClient
+	smClient smrpc.SearchManagerClient
 }
-
-var SMCG *rpc.SMClientGroup
 
 func New(conf *UMServerConfig) *UMServer {
 	dc := dataClient.New(&conf.DataCenterConf)
@@ -28,6 +28,7 @@ func New(conf *UMServerConfig) *UMServer {
 	return &UMServer{
 		addr: conf.Addr,
 		dataClient: dc,
+		smClient: rpc.InitSearchManagerClient(conf.SMAddr),
 	}
 }
 
@@ -39,9 +40,6 @@ func (s *UMServer)Init() {
 	}
 
 	logger.Printf("all users : %v\n", allUsers)
-
-	client := SMCG.GetClient()
-	defer SMCG.ReturnClient(client)
 
 	var num int32
 	num = 0
@@ -61,7 +59,7 @@ func (s *UMServer)Init() {
 				UserRecordNum: num,
 				Users: insertUsers,
 			}
-			resp, err := client.InsertUserRecords(context.Background(), ir)
+			resp, err := s.smClient.InsertUserRecords(context.Background(), ir)
 			if resp.Comm.ErrorCode != comm.RetOK {
 				return
 			} else if err != nil {
@@ -81,7 +79,7 @@ func (s *UMServer)Init() {
 		for _, tmpu := range ir.Users {
 			logger.Printf("send user : %v\n", *tmpu)
 		}
-		resp, err := client.InsertUserRecords(context.Background(), ir)
+		resp, err := s.smClient.InsertUserRecords(context.Background(), ir)
 		if resp.Comm.ErrorCode != comm.RetOK {
 			return
 		} else if err != nil {
@@ -266,15 +264,13 @@ func (s *UMServer)AddUserInfo(ctx context.Context, auiReq *umrpc.UserManagerAddU
 		return resp, nil
 	}
 
-	client := SMCG.GetClient()
-	defer SMCG.ReturnClient(client)
 	user := make([]*comm.UserInfo, 0)
 	user = append(user, ui)
 	sr := &smrpc.InsertUserRecordsReq{
 		UserRecordNum: 1,
 		Users: user,
 	}
-	sresp, err := client.InsertUserRecords(context.Background(), sr)
+	sresp, err := s.smClient.InsertUserRecords(context.Background(), sr)
 	if sresp.Comm.ErrorCode != comm.RetOK || err != nil {
 		logger.Errorf("Insert User to search manager failed, err : %s, errmsg : %s, req : %v.",
 		err, sresp.Comm.ErrorMsg, sr)

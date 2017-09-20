@@ -25,7 +25,6 @@ type TMConfig struct {
 	TasksDCDatabase  string
 	UsersDCDatabase  string
 	SMAddr      string
-	SMClientNum int
 }
 
 func init() {
@@ -62,6 +61,7 @@ func main() {
 
 	tmServer := server.New(&server.TMServerConfig{
 		Addr: tmConfig.TMAddr,
+		SMAddr: tmConfig.SMAddr,
 		TasksDataCenterConf: dataClient.DataCenterDesc{
 			Addr: tmConfig.DCAddr,
 			User: tmConfig.DCUser,
@@ -75,14 +75,6 @@ func main() {
 			Database: tmConfig.UsersDCDatabase,
 		},
 	})
-
-	server.SMCG = rpc.NewSMClientGroup(tmConfig.SMAddr, tmConfig.SMClientNum)
-
-	err = rpc.StartSMClientGroup(server.SMCG)
-	if err != nil {
-		fmt.Printf("Init Task Manager Server SMCG failed! Error : %s\n", err)
-		return
-	}
 
 	lis, err := net.Listen("tcp", tmConfig.TMAddr)
 	if err != nil {

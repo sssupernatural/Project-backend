@@ -29,7 +29,7 @@ func TestRemoveSortedDuplicate(t *testing.T)  {
 
 func TestRemoveDuplicateAbiIndicesIDs(t *testing.T) {
 	h := AbiIndicesHeap{
-		AbiIndices: make([]AbiIndices, 3),
+		AbiIndices: make([]AbiIndices, 7),
 	}
 
 	h.AbiIndices[0] = AbiIndices{
@@ -37,25 +37,25 @@ func TestRemoveDuplicateAbiIndicesIDs(t *testing.T) {
 		ParentIndex: 0,
 	}
 
-	/*
-	ids1 := []uint32{4,5,6,7,8,10}
+
+	ids1 := []uint32{4,5,6,7,8,10,21}
 	h.AbiIndices[1] = AbiIndices{
 		Abi: "运动",
 		ParentIndex: 0,
 		IDs: ids1,
 	}
-	*/
 
 
-	ids2 := []uint32{3,5,8,9,10}
-	h.AbiIndices[1] = AbiIndices{
+
+	ids2 := []uint32{3,5,8,9,10,21}
+	h.AbiIndices[2] = AbiIndices{
 		Abi: "艺术",
 		ParentIndex: 0,
 		IDs: ids2,
 	}
 
-	/*
-	ids3 := []uint32{5,6}
+
+	ids3 := []uint32{5,6,20}
 	h.AbiIndices[3] = AbiIndices{
 		Abi: "足球",
 		ParentIndex: 1,
@@ -68,13 +68,20 @@ func TestRemoveDuplicateAbiIndicesIDs(t *testing.T) {
 		ParentIndex: 1,
 		IDs: ids4,
 	}
-	*/
 
-	ids5 := []uint32{5,9,10,11}
-	h.AbiIndices[2] = AbiIndices{
+
+	ids5 := []uint32{5,9,10,11,20}
+	h.AbiIndices[5] = AbiIndices{
 		Abi: "文学",
 		ParentIndex: 2,
 		IDs: ids5,
+	}
+
+	ids6 := []uint32{5,9,10,11}
+	h.AbiIndices[6] = AbiIndices{
+		Abi: "文学",
+		ParentIndex: 2,
+		IDs: ids6,
 	}
 
 
@@ -84,7 +91,7 @@ func TestRemoveDuplicateAbiIndicesIDs(t *testing.T) {
 	fmt.Printf("heap : %v\n", h)
 	abiTree := h.ConstructAbiTree()
 	fmt.Printf("TREE: %v\n", abiTree)
-	searchIDs := abiTree.SearchIDs(10)
+	searchIDs := abiTree.SearchIDs(5)
 
 	fmt.Printf("\nsearch : %v\n", searchIDs)
 
@@ -124,5 +131,5 @@ func TestSplitPerm(t *testing.T) {
 		}
 	}()
 
-	time.Sleep(time.Second*50)
+	//time.Sleep(time.Second*50)
 }

@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	URLTasks    string = "http://localhost:8080/tasks"
+	URLTasks    string = "http://112.74.34.228:80/tasks"
+	//URLTasks    string = "http://localhost:8080/tasks"
 )
 
 func printTaskInfo(t *comm.TaskInfoWithUsers) {
@@ -26,7 +27,7 @@ func printTaskInfo(t *comm.TaskInfoWithUsers) {
 	printUserInfo(t.Requester)
 	fmt.Println("| 任务响应者信息 :")
 	if t.ChosenResponser == nil || len(t.ChosenResponser) == 0{
-		fmt.Println("| |任务还没有被选择的响应者")
+		fmt.Println("| | 任务还没有被选择的响应者")
 	} else {
 		for index, r := range t.ChosenResponser {
 			if t.FulfilStatus[index] == comm.TaskFulfilStatusDoing {
@@ -39,7 +40,7 @@ func printTaskInfo(t *comm.TaskInfoWithUsers) {
 	}
 	fmt.Println("| 任务备选响应者信息 :")
 	if t.Responsers == nil || len(t.Responsers) == 0 {
-		fmt.Println("| |任务还没有备选响应者")
+		fmt.Println("| | 任务还没有备选响应者")
 	} else {
 		for _, r := range t.Responsers {
 			printUserInfo(r)
@@ -56,12 +57,15 @@ func printTaskCreateInfo(t *comm.TaskCreateInfo)  {
 	fmt.Printf("| | 响应者年龄区间 : %d-%d\n", t.AgeMin, t.AgeMax)
 	fmt.Print("| | 响应者位置 : ")
 	for _, l := range t.Locations {
-		fmt.Printf("[%f,%f] |", l.Longitude, l.Latitude)
+		fmt.Printf(" [%f,%f] |", l.Longitude, l.Latitude)
 	}
 	fmt.Println()
 	fmt.Print("| | 响应者能力 : ")
-	for _, a := range t.Abilities.ABIs {
-		fmt.Printf("[%s] |", a.ABI)
+	for index, a := range t.Abilities.ABIs {
+		if index == 0 {
+			continue
+		}
+		fmt.Printf(" [%s] |", a.ABI)
 	}
 	fmt.Println()
 	fmt.Println("| -------------------------TaskDesc-------------------------")

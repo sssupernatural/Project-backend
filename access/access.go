@@ -13,9 +13,7 @@ type AccessConfig struct {
 	Addr        string
 	LogPath     string
 	UMAddr      string
-	UMClientNum int
 	TMAddr      string
-	TMClientNum int
 }
 
 var (
@@ -54,16 +52,14 @@ func main() {
 		return
 	}
 
-	fmt.Printf("Access Addr:[%s], Log Path:[%s], UM Addr:[%s], UM Number:[%d], TM Addr:[%s], TM Number:[%s].\n",
-		accessConf.Addr, accessConf.LogPath, accessConf.UMAddr, accessConf.UMClientNum, accessConf.TMAddr, accessConf.TMClientNum)
+	fmt.Printf("Access Addr:[%s], Log Path:[%s], UM Addr:[%s], TM Addr:[%s].\n",
+		accessConf.Addr, accessConf.LogPath, accessConf.UMAddr, accessConf.TMAddr)
 
 	accessServer := server.New()
 
 	accessServer.Addr = accessConf.Addr
 	accessServer.UMAddr = accessConf.UMAddr
-	accessServer.UMClientNum = accessConf.UMClientNum
 	accessServer.TMAddr = accessConf.TMAddr
-	accessServer.TMClientNum = accessConf.TMClientNum
 
 	err = accessServer.Serve()
 	if err != nil {

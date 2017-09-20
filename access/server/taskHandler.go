@@ -18,7 +18,7 @@ const (
 	TaskActionEvaluate string = "EVALUATE"
 )
 
-func tasksHandler(w http.ResponseWriter, req *http.Request) {
+func (s *AccessServer)tasksHandler(w http.ResponseWriter, req *http.Request) {
 	logger.Infoln("Receive a tasks request")
 
 	defer req.Body.Close()
@@ -39,7 +39,7 @@ func tasksHandler(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		err = handleTaskCreate(w, &createInfo)
+		err = s.handleTaskCreate(w, &createInfo)
 	} else {
 		var curTaskAction comm.TaskAction
 
@@ -51,11 +51,11 @@ func tasksHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		switch curTaskAction.Action {
-		case TaskActionQuery : err = handleTaskActionQuery(w, &curTaskAction)
-		case TaskActionAccept    : err = handleTaskActionAccept(w, &curTaskAction)
-		case TaskActionChoose   : err = handleTaskActionChoose(w, &curTaskAction)
-		case TaskActionFulfil    : err = handleTaskActionFulfil(w, &curTaskAction)
-		case TaskActionEvaluate   : err = handleTaskActionEvaluate(w, &curTaskAction)
+		case TaskActionQuery : err = s.handleTaskActionQuery(w, &curTaskAction)
+		case TaskActionAccept    : err = s.handleTaskActionAccept(w, &curTaskAction)
+		case TaskActionChoose   : err = s.handleTaskActionChoose(w, &curTaskAction)
+		case TaskActionFulfil    : err = s.handleTaskActionFulfil(w, &curTaskAction)
+		case TaskActionEvaluate   : err = s.handleTaskActionEvaluate(w, &curTaskAction)
 		default:
 			logger.Errorf("Unexpected task action [%s]!.\n", curTaskAction.Action)
 			http.Error(w, "Unexpected task action!", 400)
@@ -74,14 +74,12 @@ func tasksHandler(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func handleTaskCreate(w http.ResponseWriter, tc *comm.TaskCreateInfo) error {
+func (s *AccessServer)handleTaskCreate(w http.ResponseWriter, tc *comm.TaskCreateInfo) error {
 	taskCreateReq := &tmrpc.CreateTaskReq{
 		CreateInfo: tc,
 	}
 
-	tmClient := TMCG.GetClient()
-	defer TMCG.ReturnClient(tmClient)
-	resp, err := tmClient.CreateTask(context.Background(), taskCreateReq)
+	resp, err := s.tmClient.CreateTask(context.Background(), taskCreateReq)
 	if err != nil {
 		logger.Errorf("Access RPC Task Manager Failed, err[%s].\n", err)
 		return err
@@ -98,14 +96,12 @@ func handleTaskCreate(w http.ResponseWriter, tc *comm.TaskCreateInfo) error {
 	return nil
 }
 
-func handleTaskActionQuery(w http.ResponseWriter, a *comm.TaskAction) error {
+func (s *AccessServer)handleTaskActionQuery(w http.ResponseWriter, a *comm.TaskAction) error {
 	queryTasksReq := &tmrpc.QueryUserTasksReq {
 		UserID: a.UserID,
 	}
 
-	tmClient := TMCG.GetClient()
-	defer TMCG.ReturnClient(tmClient)
-	resp, err := tmClient.QueryUserTasks(context.Background(), queryTasksReq)
+	resp, err := s.tmClient.QueryUserTasks(context.Background(), queryTasksReq)
 	if err != nil {
 		logger.Errorf("Access RPC task Manager Failed, err[%s].\n", err)
 		return err
@@ -125,21 +121,17 @@ func handleTaskActionQuery(w http.ResponseWriter, a *comm.TaskAction) error {
 
 	w.Write(respData)
 
-
-
 	return nil
 }
 
-func handleTaskActionAccept(w http.ResponseWriter, a *comm.TaskAction) error {
+func (s *AccessServer)handleTaskActionAccept(w http.ResponseWriter, a *comm.TaskAction) error {
 	accepttasksReq := &tmrpc.AcceptTaskReq {
 		TaskID: a.TaskID,
 		ResponserID: a.UserID,
 		Decision: a.Decision,
 	}
 
-	tmClient := TMCG.GetClient()
-	defer TMCG.ReturnClient(tmClient)
-	resp, err := tmClient.AcceptTask(context.Background(), accepttasksReq)
+	resp, err := s.tmClient.AcceptTask(context.Background(), accepttasksReq)
 	if err != nil {
 		logger.Errorf("Access RPC task Manager Failed, err[%s].\n", err)
 		return err
@@ -156,15 +148,13 @@ func handleTaskActionAccept(w http.ResponseWriter, a *comm.TaskAction) error {
 	return nil
 }
 
-func handleTaskActionChoose(w http.ResponseWriter, a *comm.TaskAction) error {
+func (s *AccessServer)handleTaskActionChoose(w http.ResponseWriter, a *comm.TaskAction) error {
 	chooseResponserReq := &tmrpc.ChooseTaskResponserReq {
 		TaskID: a.TaskID,
 		ChoseResponsersIDs: a.ChosenResponserIDs,
 	}
 
-	tmClient := TMCG.GetClient()
-	defer TMCG.ReturnClient(tmClient)
-	resp, err := tmClient.ChooseTaskResponser(context.Background(), chooseResponserReq)
+	resp, err := s.tmClient.ChooseTaskResponser(context.Background(), chooseResponserReq)
 	if err != nil {
 		logger.Errorf("Access RPC task Manager Failed, err[%s].\n", err)
 		return err
@@ -181,15 +171,13 @@ func handleTaskActionChoose(w http.ResponseWriter, a *comm.TaskAction) error {
 	return nil
 }
 
-func handleTaskActionFulfil(w http.ResponseWriter, a *comm.TaskAction) error {
+func (s *AccessServer)handleTaskActionFulfil(w http.ResponseWriter, a *comm.TaskAction) error {
 	fulfilTaskReq := &tmrpc.FulfilTaskReq {
 		TaskID: a.TaskID,
 		ResponserID: a.UserID,
 	}
 
-	tmClient := TMCG.GetClient()
-	defer TMCG.ReturnClient(tmClient)
-	resp, err := tmClient.FulfilTask(context.Background(), fulfilTaskReq)
+	resp, err := s.tmClient.FulfilTask(context.Background(), fulfilTaskReq)
 	if err != nil {
 		logger.Errorf("Access RPC task Manager Failed, err[%s].\n", err)
 		return err
@@ -206,15 +194,13 @@ func handleTaskActionFulfil(w http.ResponseWriter, a *comm.TaskAction) error {
 	return nil
 }
 
-func handleTaskActionEvaluate(w http.ResponseWriter, a *comm.TaskAction) error {
+func (s *AccessServer)handleTaskActionEvaluate(w http.ResponseWriter, a *comm.TaskAction) error {
 	evaluateTaskReq := &tmrpc.EvaluateAndFinishTaskReq {
 		TaskID: a.TaskID,
 		RequesterID: a.UserID,
 	}
 
-	tmClient := TMCG.GetClient()
-	defer TMCG.ReturnClient(tmClient)
-	resp, err := tmClient.EvaluateAndFinishTask(context.Background(), evaluateTaskReq)
+	resp, err := s.tmClient.EvaluateAndFinishTask(context.Background(), evaluateTaskReq)
 	if err != nil {
 		logger.Errorf("Access RPC task Manager Failed, err[%s].\n", err)
 		return err

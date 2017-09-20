@@ -16,7 +16,7 @@ const (
 	UserActionLogout   string = "LOGOUT"
 )
 
-func usersHandler(w http.ResponseWriter, req *http.Request) {
+func (s *AccessServer)usersHandler(w http.ResponseWriter, req *http.Request) {
 	logger.Infoln("Receive a users request")
 
 	if req.Method != "POST" {
@@ -43,9 +43,9 @@ func usersHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	switch curUserAction.Action {
-	case UserActionRegister : err = handleUserActionRegister(w, &curUserAction)
-	case UserActionLogin    : err = handleUserActionLogin(w, &curUserAction)
-	case UserActionLogout   : err = handleUserActionLogout(w, &curUserAction)
+	case UserActionRegister : err = s.handleUserActionRegister(w, &curUserAction)
+	case UserActionLogin    : err = s.handleUserActionLogin(w, &curUserAction)
+	case UserActionLogout   : err = s.handleUserActionLogout(w, &curUserAction)
 	default:
 		logger.Errorf("Unexpected user action [%s]!.\n", curUserAction.Action)
 		http.Error(w, "Unexpected user action!", 400)
@@ -62,7 +62,7 @@ func usersHandler(w http.ResponseWriter, req *http.Request) {
 	return
 }
 
-func handleUserActionRegister(w http.ResponseWriter, a *comm.UserAction) error {
+func (s *AccessServer)handleUserActionRegister(w http.ResponseWriter, a *comm.UserAction) error {
 	userRegisterReq := &umrpc.UserManagerRegisterReq {
 		UserCheckInfo: &comm.UserCheckInfo{
 			PhoneNumber: a.CheckInfo.PhoneNumber,
@@ -71,9 +71,7 @@ func handleUserActionRegister(w http.ResponseWriter, a *comm.UserAction) error {
 		},
 	}
 
-	umClient := UMCG.GetClient()
-	defer UMCG.ReturnClient(umClient)
-	resp, err := umClient.RegisterUser(context.Background(), userRegisterReq)
+	resp, err := s.umClient.RegisterUser(context.Background(), userRegisterReq)
 	if err != nil {
 		logger.Errorf("Access RPC User Manager Failed, err[%s].\n", err)
 		return err
@@ -96,7 +94,7 @@ func handleUserActionRegister(w http.ResponseWriter, a *comm.UserAction) error {
 	return nil
 }
 
-func handleUserActionLogin(w http.ResponseWriter, a *comm.UserAction) error {
+func (s *AccessServer)handleUserActionLogin(w http.ResponseWriter, a *comm.UserAction) error {
 	userLoginReq := &umrpc.UserManagerLoginReq {
 		UserCheckInfo: &comm.UserCheckInfo{
 			PhoneNumber: a.CheckInfo.PhoneNumber,
@@ -104,9 +102,7 @@ func handleUserActionLogin(w http.ResponseWriter, a *comm.UserAction) error {
 		},
 	}
 
-	umClient := UMCG.GetClient()
-	defer UMCG.ReturnClient(umClient)
-	resp, err := umClient.LoginUser(context.Background(), userLoginReq)
+	resp, err := s.umClient.LoginUser(context.Background(), userLoginReq)
 	if err != nil {
 		logger.Errorf("Access RPC User Manager Failed, err[%s].\n", err)
 		return err
@@ -129,16 +125,14 @@ func handleUserActionLogin(w http.ResponseWriter, a *comm.UserAction) error {
 	return nil
 }
 
-func handleUserActionLogout(w http.ResponseWriter, a *comm.UserAction) error {
+func (s *AccessServer)handleUserActionLogout(w http.ResponseWriter, a *comm.UserAction) error {
 	userLogoutReq := &umrpc.UserManagerLogoutReq{
 		UserCheckInfo: &comm.UserCheckInfo{
 			PhoneNumber: a.CheckInfo.PhoneNumber,
 		},
 	}
 
-	umClient := UMCG.GetClient()
-	defer UMCG.ReturnClient(umClient)
-	resp, err := umClient.LogoutUser(context.Background(), userLogoutReq)
+	resp, err := s.umClient.LogoutUser(context.Background(), userLogoutReq)
 	if err != nil {
 		logger.Errorf("Access RPC User Manager Failed, err[%s].\n", err)
 		return err
@@ -155,16 +149,14 @@ func handleUserActionLogout(w http.ResponseWriter, a *comm.UserAction) error {
 	return nil
 }
 
-func handleUserAddInfo(w http.ResponseWriter, u *comm.UserInfo) error {
+func (s *AccessServer)handleUserAddInfo(w http.ResponseWriter, u *comm.UserInfo) error {
 	userAddInfoReq := &umrpc.UserManagerAddUserInfoReq{
 		NewUserInfo: u,
 	}
 
 	logger.Printf("receive ui : %v.\n", u)
 
-	umClient := UMCG.GetClient()
-	defer UMCG.ReturnClient(umClient)
-	resp, err := umClient.AddUserInfo(context.Background(), userAddInfoReq)
+	resp, err := s.umClient.AddUserInfo(context.Background(), userAddInfoReq)
 	if err != nil {
 		logger.Errorf("Access RPC User Manager Failed, err[%s].\n", err)
 		return err
@@ -187,7 +179,7 @@ func handleUserAddInfo(w http.ResponseWriter, u *comm.UserInfo) error {
 	return nil
 }
 
-func userInfoHandler(w http.ResponseWriter, req *http.Request) {
+func (s *AccessServer)userInfoHandler(w http.ResponseWriter, req *http.Request) {
 	logger.Infoln("Receive a user info request")
 
 	if req.Method != "POST" {
@@ -213,7 +205,7 @@ func userInfoHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = handleUserAddInfo(w, &curUserInfo)
+	err = s.handleUserAddInfo(w, &curUserInfo)
 	if err == nil {
 		logger.Infoln("Handle user info request succeed!")
 	} else {

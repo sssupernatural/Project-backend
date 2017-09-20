@@ -12,6 +12,7 @@ import (
 
 type TMServerConfig struct {
 	Addr           string
+	SMAddr         string
     TasksDataCenterConf dataClient.DataCenterDesc
 	UsersDataCenterConf dataClient.DataCenterDesc
 }
@@ -20,13 +21,11 @@ type TMServer struct {
 	addr string
 	tasksDataClient *dataClient.DataCenterClient
 	usersDataClient *dataClient.DataCenterClient
-
+	smClient smrpc.SearchManagerClient
 	tasksLock sync.RWMutex
 	tasks map[uint64]*comm.TaskInfo
 	userTasks map[uint32][]*comm.TaskInfo
 }
-
-var SMCG *rpc.SMClientGroup
 
 func New(conf *TMServerConfig) *TMServer {
 	tasksdc := dataClient.New(&conf.TasksDataCenterConf)
@@ -38,6 +37,8 @@ func New(conf *TMServerConfig) *TMServer {
 		addr: conf.Addr,
 		tasksDataClient: tasksdc,
 		usersDataClient: usersdc,
+
+		smClient: rpc.InitSearchManagerClient(conf.SMAddr),
 
 		tasks: make(map[uint64]*comm.TaskInfo),
 		userTasks: make(map[uint32][]*comm.TaskInfo),
@@ -57,17 +58,8 @@ func generateCreateTaskResp(errCode int32) *tmrpc.CreateTaskResp {
 	}
 }
 
-func copyTaskResponsers(srcTask *comm.TaskInfo, dstTask *comm.TaskInfo)  {
-	for _, responser := range srcTask.Responsers {
-		dstTask.Responsers = append(dstTask.Responsers, responser)
-	}
-}
-
 func (s *TMServer)searchResponsersAsync(srreq *smrpc.SearchResponsersReq) {
-	client := SMCG.GetClient()
-	defer SMCG.ReturnClient(client)
-
-	resp, err := client.SearchResponsers(context.Background(), srreq)
+	resp, err := s.smClient.SearchResponsers(context.Background(), srreq)
 	if err != nil || resp.Comm.ErrorCode != comm.RetOK {
 		logger.Errorf("Task search responsers failed, err:%s, msg:%s, req:%v. SET TASK TO ERROR STATUS!", err, resp.Comm.ErrorMsg, srreq)
 		derr := s.tasksDataClient.UpdateTaskStatusByTaskID(resp.Task.ID, comm.TasKStatusSearchResponserFailed)
@@ -75,14 +67,28 @@ func (s *TMServer)searchResponsersAsync(srreq *smrpc.SearchResponsersReq) {
 			logger.Errorf("[DataCenter]Update task status to SRF failed, err:%s, req:%v.", derr, srreq)
 		}
 
-
 		s.tasksLock.Lock()
 		s.tasks[resp.Task.ID].Status = comm.TasKStatusSearchResponserFailed
 		s.tasksLock.Unlock()
 		return
 	}
 
+	if resp.Task.Responsers == nil || len(resp.Task.Responsers) == 0 {
+		err = s.tasksDataClient.UpdateTaskStatusByTaskID(resp.Task.ID, comm.TasKStatusSearchResponserNone)
+		if err != nil {
+			logger.Errorf("[DataCenter]Update task status to wating SRN, err:%s, req:%v.", err, srreq)
+		}
+
+		s.tasksLock.Lock()
+		s.tasks[resp.Task.ID].Status = comm.TasKStatusSearchResponserNone
+		s.tasksLock.Unlock()
+		return
+	}
+
 	err = s.tasksDataClient.UpdateTaskStatusByTaskID(resp.Task.ID, comm.TaskStatusWaitingAccept)
+	if err != nil {
+		logger.Errorf("[DataCenter]Update task status to wating accept failed, err:%s, req:%v.", err, srreq)
+	}
 	s.tasksLock.Lock()
 	s.tasks[resp.Task.ID].Status = comm.TaskStatusWaitingAccept
 

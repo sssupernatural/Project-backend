@@ -24,7 +24,6 @@ type UMConfig struct {
 	DCPassword  string
 	DCDatabase  string
 	SMAddr      string
-	SMClientNum int
 }
 
 func init() {
@@ -49,9 +48,9 @@ func main() {
 
 	_, err := toml.DecodeFile(umsConfigPath, &umConfig)
 
-	fmt.Printf("Decode UM config : lgpath(%s), umaddr(%s), dcaddr(%s), dcuser(%s), dcpw(%s), dcdb(%s), smaddr(%s), smcnum(%d).\n",
+	fmt.Printf("Decode UM config : lgpath(%s), umaddr(%s), dcaddr(%s), dcuser(%s), dcpw(%s), dcdb(%s), smaddr(%s).\n",
 				umConfig.UMLogPath, umConfig.UMAddr, umConfig.DCAddr, umConfig.DCUser, umConfig.DCPassword,
-				umConfig.DCDatabase, umConfig.SMAddr, umConfig.SMClientNum)
+				umConfig.DCDatabase, umConfig.SMAddr)
 
 	err = initUMLog(umConfig.UMLogPath)
 	if err != nil {
@@ -61,6 +60,7 @@ func main() {
 
 	umServer := server.New(&server.UMServerConfig{
 		Addr: umConfig.UMAddr,
+		SMAddr: umConfig.SMAddr,
 		DataCenterConf: dataClient.DataCenterDesc{
 			Addr: umConfig.DCAddr,
 			User: umConfig.DCUser,
@@ -68,14 +68,6 @@ func main() {
 			Database: umConfig.DCDatabase,
 		},
 	})
-
-	server.SMCG = rpc.NewSMClientGroup(umConfig.SMAddr, umConfig.SMClientNum)
-
-	err = rpc.StartSMClientGroup(server.SMCG)
-	if err != nil {
-		fmt.Printf("Init User Manager Server SMCG failed! Error : %s\n", err)
-		return
-	}
 
 	go umServer.Init()
 

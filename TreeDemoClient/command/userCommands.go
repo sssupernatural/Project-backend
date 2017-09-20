@@ -11,8 +11,10 @@ import (
 )
 
 const (
-	URLUsers    string = "http://localhost:8080/users"
-    URLUserInfo string = "http://localhost:8080/userinfo"
+	URLUsers    string = "http://112.74.34.228:80/users"
+    URLUserInfo string = "http://112.74.34.228:80/userinfo"
+	//URLUsers    string = "http://localhost:8080/users"
+	//URLUserInfo string = "http://localhost:8080/userinfo"
 )
 
 const (

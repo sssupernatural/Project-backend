@@ -36,7 +36,7 @@ func showCommandHelp() {
 	fmt.Println("ou -> 登出")
 	fmt.Println("au -> 添加信息")
 	fmt.Println("ea -> 编辑能力")
-	fmt.Println("ea -> 编辑位置")
+	fmt.Println("el -> 编辑位置")
 	fmt.Println("ct -> 发起任务")
 	fmt.Println("qt -> 查询任务")
 	fmt.Println("at -> 接受任务")

@@ -14,6 +14,8 @@ const (
 	TaskStatusProcessing    int32  = 11003
 	TaskStatusFulfilled     int32  = 11004
 	TasKStatusSearchResponserFailed = 11005
+	TasKStatusSearchResponserNone = 11006
+
 
 	TaskDecisionAccept int32 = 12001
 	TaskDecisionRefuse int32 = 12002
@@ -39,6 +41,7 @@ const 	(
 	MsgTaskStatusFulfilled     string  = "已完成"
 	MsgTaskStatusUnknown       string  = "异常"
 	MsgTasKStatusSearchResponserFailed string = "搜索备选响应者失败"
+	MsgTasKStatusSearchResponserNone string = "没有找到合适的响应者"
 
 	MsgTaskFulfilStatusFinished string = "任务已完成"
 	MsgTaskFulfilStatusDoing    string = "任务进行中"
@@ -62,7 +65,7 @@ func DescTaskStatus(status int32) string {
 	case TaskStatusProcessing: return MsgTaskStatusProcessing
 	case TaskStatusFulfilled: return MsgTaskStatusFulfilled
 	case TasKStatusSearchResponserFailed: return MsgTasKStatusSearchResponserFailed
-
+	case TasKStatusSearchResponserNone: return MsgTasKStatusSearchResponserNone
 	}
 }
 
