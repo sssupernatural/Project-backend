@@ -138,9 +138,7 @@ func (engine *Engine)ForceFlushIndexesPeriod() {
 //      2. 这个函数调用是非同步的，也就是说在函数返回时有可能用户还没有加入索引中，因此
 //         如果立刻调用Search可能无法查询到这个用户。强制刷新索引请调用FlushIndex函数。
 func (engine *Engine) IndexUser(userId uint32, data types.UserIndexData, forceUpdate bool) {
-	if userId == 0 && forceUpdate == true {
-		logger.Info("[Engine]Force update user index.")
-	} else {
+	if userId != 0 || forceUpdate != true {
 		logger.Infof("[Engine]Handle index user : ID(%d), force update(%v).", userId, forceUpdate)
 	}
 	engine.internalIndexUser(userId, data, forceUpdate)

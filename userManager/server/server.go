@@ -39,8 +39,6 @@ func (s *UMServer)Init() {
 		return
 	}
 
-	logger.Printf("all users : %v\n", allUsers)
-
 	var num int32
 	num = 0
 	insertUsers := make([]*comm.UserInfo, 0)
@@ -50,7 +48,6 @@ func (s *UMServer)Init() {
 		if u.Abilities == nil {
 			continue
 		}
-		logger.Printf("append user : %v\n", u)
 		insertUsers = append(insertUsers, &u)
 
 		num++
@@ -75,9 +72,6 @@ func (s *UMServer)Init() {
 		ir := &smrpc.InsertUserRecordsReq{
 			UserRecordNum: num,
 			Users: insertUsers,
-		}
-		for _, tmpu := range ir.Users {
-			logger.Printf("send user : %v\n", *tmpu)
 		}
 		resp, err := s.smClient.InsertUserRecords(context.Background(), ir)
 		if resp.Comm.ErrorCode != comm.RetOK {

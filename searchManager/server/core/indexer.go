@@ -130,7 +130,6 @@ func (indexer *Indexer) AddUserToCache(user *types.UserIndex, forceUpdate bool) 
 	}
 	//缓存满或者强制更新时，将"等待加入索引的用户缓存区"中的用户添加到索引表中
 	if indexer.addCacheLock.addCachePointer >= indexer.initOptions.UserCacheSize || forceUpdate {
-		logger.Info("[Indexer]Start add cache users to index.")
 		indexer.tableLock.Lock()
 		position := 0
 		for i := 0; i < indexer.addCacheLock.addCachePointer; i++ {
@@ -171,7 +170,6 @@ func (indexer *Indexer) AddUserToCache(user *types.UserIndex, forceUpdate bool) 
 		indexer.addCacheLock.Unlock()
 		sort.Sort(addCachedUsers)
 		indexer.AddUsers(&addCachedUsers)
-		logger.Info("[Indexer]Add cache users to index finished.")
 	} else {
 		indexer.addCacheLock.Unlock()
 	}
@@ -183,8 +181,6 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 	if indexer.initialized == false {
 		logger.Fatal("索引器尚未初始化")
 	}
-
-	logger.Info("[Indexer]Add users to index.")
 
 	indexer.tableLock.Lock()
 	defer indexer.tableLock.Unlock()
@@ -263,8 +259,6 @@ func (indexer *Indexer) AddUsers(users *types.UsersIndex) {
 		logger.Println()
 		*/
 	}
-
-	logger.Info("[Indexer]Add users to index finished.")
 }
 
 // 向 REMOVECACHE 中加入一个待删除用户

@@ -477,7 +477,9 @@ func (u *User)EditAbilities() {
 
 	curAbiIDs := make([]int, 0)
 	for _, abi := range u.info.Abilities.ABIs {
-		curAbiIDs = append(curAbiIDs, ClientAbiToIDMap[abi.ABI])
+		if _, ok := ClientAbiToIDMap[abi.ABI]; ok {
+			curAbiIDs = append(curAbiIDs, ClientAbiToIDMap[abi.ABI])
+		}
 	}
 
 	u.printUserAbilities()

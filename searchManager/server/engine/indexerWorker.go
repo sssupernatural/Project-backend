@@ -32,9 +32,8 @@ func (engine *Engine) indexerAddUserWorker(shard int) {
 		request := <-engine.indexerAddUserChannels[shard]
 		if request.user != nil {
 			logger.Infof("[Indexer]Handle indexer add user req: user id(%d).", request.user.ID)
-		} else {
-			logger.Info("[Indexer]Handle user index force update.")
 		}
+
 		engine.indexers[shard].AddUserToCache(request.user, request.forceUpdate)
 		if request.user != nil {
 			atomic.AddUint64(&engine.numAbiIndexAdded,
