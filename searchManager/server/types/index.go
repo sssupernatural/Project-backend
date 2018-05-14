@@ -36,6 +36,10 @@ func GenerateOwnerLocation(srcLoc *comm.Location) comm.Location {
 func GenerateLocOwner(locs []*comm.Location) []comm.Location {
 	out := make([]comm.Location, 0)
 
+	if locs == nil || len(locs) == 0 {
+		return out
+	}
+
 	for _, l := range locs {
 		out = append(out, GenerateOwnerLocation(l))
 	}

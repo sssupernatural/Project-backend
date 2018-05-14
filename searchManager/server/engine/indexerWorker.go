@@ -15,7 +15,7 @@ type indexerLookupRequest struct {
 	countDocsOnly       bool
 	abisHeap            *comm.AbisHeap
     locationOwners      []comm.Location
-	userIds             map[uint32]bool
+    userIds             map[uint32]bool
 	options             types.RankOptions
 	rankerReturnChannel chan rankerReturnRequest
 	orderless           bool

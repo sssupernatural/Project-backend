@@ -29,7 +29,7 @@ func (s *AccessServer)tasksHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if req.Method == "POST" {
+	if req.Method == "PUT" {
 		var createInfo comm.TaskCreateInfo
 
 		err = json.Unmarshal(reqData, &createInfo)
@@ -100,6 +100,8 @@ func (s *AccessServer)handleTaskActionQuery(w http.ResponseWriter, a *comm.TaskA
 	queryTasksReq := &tmrpc.QueryUserTasksReq {
 		UserID: a.UserID,
 	}
+
+	logger.Infof("Query Tasks user id : %u.", a.UserID)
 
 	resp, err := s.tmClient.QueryUserTasks(context.Background(), queryTasksReq)
 	if err != nil {

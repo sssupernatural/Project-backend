@@ -17,6 +17,7 @@ type SMScoringField struct {
 	Abis        *comm.AbisHeap
 	CurLocation *comm.Location
 	Locations   []*comm.Location
+	Importance  []int32
 }
 
 func (d *UserIndexData)GetScoringField() SMScoringField {

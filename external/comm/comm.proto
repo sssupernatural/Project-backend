@@ -47,13 +47,19 @@ message TaskAction {
 }
 
 message TaskCreateInfo {
-    uint32 RequesterID            = 1;
-    string Brief                = 2;
-    int32  Sex                  = 3;
-    int32  AgeMin               = 4;
-    int32  AgeMax               = 5;
-    repeated Location Locations = 6;
-    AbisHeap Abilities          = 7;
+    uint32 RequesterID                = 1;
+    string Brief                      = 2;
+    int32  Sex                        = 3;
+    int32  AgeMin                     = 4;
+    int32  AgeMax                     = 5;
+    string TaskCreateTime             = 6;
+    string TaskStartTime              = 7;
+    string TaskLocationDescStr        = 8;
+    Location TaskLocation             = 9;
+    repeated string LocationsDescStrs = 10;
+    repeated Location Locations       = 11;
+    AbisHeap Abilities                = 12;
+    repeated int32 ImportanceArray    = 13;
 }
 
 message TaskInfo {

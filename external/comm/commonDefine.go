@@ -13,8 +13,9 @@ const (
 	TaskStatusWaitingChoose int32  = 11002
 	TaskStatusProcessing    int32  = 11003
 	TaskStatusFulfilled     int32  = 11004
-	TasKStatusSearchResponserFailed int32 = 11005
-	TasKStatusSearchResponserNone int32 = 11006
+	TaskStatusFinished      int32  = 11005
+	TasKStatusSearchResponserFailed int32 = 11006
+	TasKStatusSearchResponserNone int32 = 11007
 
 
 	TaskDecisionAccept int32 = 12001

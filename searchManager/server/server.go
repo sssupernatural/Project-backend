@@ -77,6 +77,7 @@ func (s *SMServer)SearchResponsers(ctx context.Context, srReq *smrpc.SearchRespo
 		AgeMin: ti.Desc.AgeMin,
 		Abis:   ti.Desc.Abilities,
 		Locations: ti.Desc.Locations,
+		Importance: ti.Desc.ImportanceArray,
 	}
 
 	sr := st.SearchRequest{

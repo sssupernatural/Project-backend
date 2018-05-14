@@ -74,6 +74,7 @@ func (s *TMServer)searchResponsersAsync(srreq *smrpc.SearchResponsersReq) {
 	}
 
 	if resp.Task.Responsers == nil || len(resp.Task.Responsers) == 0 {
+		logger.Infof("Find no responsers task id : %lu.", resp.Task.ID)
 		err = s.tasksDataClient.UpdateTaskStatusByTaskID(resp.Task.ID, comm.TasKStatusSearchResponserNone)
 		if err != nil {
 			logger.Errorf("[DataCenter]Update task status to wating SRN, err:%s, req:%v.", err, srreq)
@@ -95,6 +96,7 @@ func (s *TMServer)searchResponsersAsync(srreq *smrpc.SearchResponsersReq) {
 	var ti *comm.TaskInfo = s.tasks[resp.Task.ID]
 	for _, responser := range resp.Task.Responsers {
 		if responser != ti.Desc.RequesterID {
+			logger.Infof("add responser id %u, task id : %lu.", responser, resp.Task.ID)
 			s.userTasks[responser] = append(s.userTasks[responser], ti)
 		}
 	}
@@ -105,6 +107,7 @@ func (s *TMServer)searchResponsersAsync(srreq *smrpc.SearchResponsersReq) {
 
 func (s *TMServer)CreateTask(ctx context.Context, ctReq *tmrpc.CreateTaskReq) (*tmrpc.CreateTaskResp, error) {
 	//生成任务记录并持久化
+	logger.Infof("Create task！")
 	ti := &comm.TaskInfo{
 		Status: comm.TaskStatusCreating,
 		Desc: ctReq.CreateInfo,
@@ -137,6 +140,8 @@ func (s *TMServer)CreateTask(ctx context.Context, ctReq *tmrpc.CreateTaskReq) (*
 }
 
 func (s *TMServer)QueryUserTasks(ctx context.Context, ctReq *tmrpc.QueryUserTasksReq) (*tmrpc.QueryUserTasksResp, error) {
+	logger.Infof("Query Tasks user id : %u.", ctReq.UserID)
+
 	taskInfoWithUsers := make([]*comm.TaskInfoWithUsers, 0)
 
 	s.tasksLock.RLock()
@@ -144,6 +149,7 @@ func (s *TMServer)QueryUserTasks(ctx context.Context, ctReq *tmrpc.QueryUserTask
 
 	_, ok := s.userTasks[ctReq.UserID]
 	if ok == false {
+		logger.Infof("No tasks user id : %u.", ctReq.UserID)
 		resp := &tmrpc.QueryUserTasksResp{
 			Comm: generateTaskRespComm(comm.RetUserHasNoTask),
 			Tasks: taskInfoWithUsers,
@@ -151,6 +157,8 @@ func (s *TMServer)QueryUserTasks(ctx context.Context, ctReq *tmrpc.QueryUserTask
 
 		return resp, nil
 	}
+
+	logger.Infof("Find tasks user id : %u.", ctReq.UserID)
 
 	var tiwu *comm.TaskInfoWithUsers
 	for _, ti := range s.userTasks[ctReq.UserID] {

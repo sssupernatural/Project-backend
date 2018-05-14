@@ -383,7 +383,9 @@ func (indexer *Indexer)getLocationOwnersIDs(locationOwners []comm.Location) []ui
 	locationsIDs := make([]uint32, 0)
 	indexer.tableLock.RLock()
 	for _, loc := range locationOwners {
-		locationsIDs = append(locationsIDs, indexer.tableLock.locTable[loc].IDs...)
+		if _, ok := indexer.tableLock.locTable[loc]; ok {
+			locationsIDs = append(locationsIDs, indexer.tableLock.locTable[loc].IDs...)
+		}
 	}
 	indexer.tableLock.RUnlock()
 
@@ -411,7 +413,11 @@ func (indexer *Indexer) Lookup(
 		//过滤能力堆中的用户，规则是父能力节点不包含子能力节点的用户，且所有能力节点都只包含在归属坐标组中的用户
 		locationOwnersIds := indexer.getLocationOwnersIDs(locationOwners)
 		logger.Infof("[Indexer]Filter abi indices heap IDs with location owner IDs(%v).", locationOwnersIds)
-		abisIndicesHeap.FilterIDsByAbisIndicesAndLocationIndices(locationOwnersIds)
+		if len(locationOwnersIds) != 0 {
+			abisIndicesHeap.FilterIDsByAbisIndicesAndLocationIndices(locationOwnersIds)
+		} else {
+			abisIndicesHeap.FilterIDsByAbisIndices()
+		}
 	}
 	logger.Infof("[Indexer]Filtered abi indices heap : %v", abisIndicesHeap)
 

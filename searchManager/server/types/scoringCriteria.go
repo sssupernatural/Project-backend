@@ -55,6 +55,59 @@ func (rule RankByInfo) Score(user IndexedUser, fields interface{}, requestFields
 
 
 	score := make([]float32, 0)
+
+	//排序第一级 主要能力分
+	var mainAbi string
+	if rf.Importance[0] != 0 {
+		mainAbi = rf.Abis.ABIs[rf.Importance[0]].ABI
+	}
+	var firstAbi string
+	if rf.Importance[1] != 0 {
+		firstAbi = rf.Abis.ABIs[rf.Importance[1]].ABI
+	}
+	var secondAbi string
+	if rf.Importance[2] != 0 {
+		secondAbi = rf.Abis.ABIs[rf.Importance[2]].ABI
+	}
+
+	topAbisScore := 0
+	for _, fAbi := range f.Abis.ABIs {
+		if mainAbi != "" && mainAbi == fAbi.ABI {
+			topAbisScore += 10
+		} else if firstAbi != "" && firstAbi == fAbi.ABI {
+			topAbisScore += 5
+		} else if secondAbi != "" && secondAbi == fAbi.ABI {
+			topAbisScore += 2
+		}
+	}
+
+	score = append(score, float32(topAbisScore))
+
+	//排序第二级 当前位置在响应位置中
+	if rf.Locations != nil && len(rf.Locations) != 0 {
+		rfLocOwner := GenerateLocOwner(rf.Locations)
+		fLocOwner := GenerateLocOwner(f.Locations)
+
+		var curLocOwner comm.Location
+		scoreCurLoc := 0
+		if f.CurLocation != nil {
+			curLocOwner = GenerateOwnerLocation(f.CurLocation)
+			fLocOwner = append(fLocOwner, curLocOwner)
+			rfLocOwner = saveSortedDuplicateLocs(rfLocOwner, fLocOwner)
+			for _, loc := range rfLocOwner {
+				if loc == curLocOwner {
+					scoreCurLoc = 1
+				}
+			}
+		}
+		score = append(score, float32(scoreCurLoc))
+
+		//排序第三级 响应者的常用位置在响应位置的数量
+		scoreLocs := len(rfLocOwner)
+		score = append(score, float32(scoreLocs))
+	}
+
+	//排序第四级 其他能力得分
 	scoreAbi := 0
 	for _, rfAbi := range rf.Abis.ABIs {
 		for _, fAbi := range f.Abis.ABIs {
@@ -64,23 +117,6 @@ func (rule RankByInfo) Score(user IndexedUser, fields interface{}, requestFields
 		}
 	}
 	score = append(score, float32(scoreAbi))
-
-	rfLocOwner := GenerateLocOwner(rf.Locations)
-	fLocOwner := GenerateLocOwner(f.Locations)
-	curLocOwner := GenerateOwnerLocation(f.CurLocation)
-	fLocOwner = append(fLocOwner, curLocOwner)
-
-	scoreCurLoc := 0
-	rfLocOwner = saveSortedDuplicateLocs(rfLocOwner, fLocOwner)
-	for _, loc := range rfLocOwner {
-		if loc == curLocOwner {
-			scoreCurLoc = 1
-		}
-	}
-	score = append(score, float32(scoreCurLoc))
-
-	scoreLocs := len(rfLocOwner)
-	score = append(score, float32(scoreLocs))
 
 	return score
 }
